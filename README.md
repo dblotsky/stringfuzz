@@ -1,7 +1,12 @@
 Description
 ===========
 
-A collection of tools to manipulate and generate SMT-LIB 2.x problems.
+A collection of tools to manipulate and generate SMT-LIB 2.x problems. There
+are three main tools:
+
+- `smtfuzzg` to generate new problems
+- `smtfuzzx` to transform existing problems
+- `smtstats` to measure properties of problems
 
 Running
 =======
