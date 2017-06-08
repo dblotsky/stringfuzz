@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+
+'''
+Obsolete 'unprintable' transformer. Kept for reference.
+'''
+
+import sys
+import re
+import random
+
+# constants
+EXCLUDED    = map(ord, '\n\t\x00')
+UNPRINTABLE = [i for i in range(32) if i not in EXCLUDED]
+
+LITERAL_PATTERN = r'"((?:[^"]|"")*)"'
+
+# globals
+unprintable_chars = None
+
+# functions
+def _gen_unprintable():
+    while True:
+        yield random.choice(UNPRINTABLE)
+
+def get_char():
+    global unprintable_chars
+    char = next(unprintable_chars)
+    return '\\x{:0>2x}'.format(char)
+
+def get_string(n):
+    return ''.join(get_char() for i in range(n))
+
+def replace_unprintable(match):
+    string = match.group(1)
+    replacement = '"' + get_string(len(string)) + '"'
+    return replacement
+
+def main():
+
+    global unprintable_chars
+
+    # create generators
+    unprintable_chars = _gen_unprintable()
+
+    # process input
+    program = sys.stdin.read()
+    program = re.sub(LITERAL_PATTERN, replace_unprintable, program)
+    sys.stdout.write(program)
+
+if __name__ == '__main__':
+    main()

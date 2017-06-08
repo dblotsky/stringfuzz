@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+
+'''
+CLI for the parser. Outputs AST.
+'''
+
+import sys
+import argparse
+
+from smtfuzz.constants import LANGUAGES, SMT_20_STRING
+from smtfuzz.parser import parse
+
+def main():
+
+    # create arg parser
+    parser = argparse.ArgumentParser(description='Parse an SMT 2.* file.')
+    parser.add_argument(
+        'file',
+        nargs   = '?',
+        default = sys.stdin,
+        type    = argparse.FileType('r'),
+        help    = 'input file (default: stdin)'
+    )
+    parser.add_argument(
+        '--language',
+        '-l',
+        dest    = 'language',
+        metavar = 'L',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'input language (default: {})'.format(SMT_25_STRING)
+    )
+
+    # parse args
+    args = parser.parse_args()
+
+    # parse input
+    try:
+        expressions = parse(args.file.read(), args.language)
+
+    # handle errors
+    except IndexError as e:
+        print(e, file=sys.stderr)
+        return 1
+
+    # print result
+    for expression in expressions:
+        print(expression)
+
+    return 0
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+
+'''
+Try parsing all files in given problem lists, and print out the ones that failed.
+'''
+
+import os
+import sys
+import threading
+import datetime
+import traceback
+
+from collections import deque
+
+from smtfuzz.constants import SMT_20_STRING, SMT_25_STRING
+from smtfuzz.scanner import scan_file
+from smtfuzz.parser import parse_file, parse_tokens
+
+# constants
+MAX_THREADS   = 8
+MAX_HISTORY   = 1000
+ESC           = '\033'
+BACK_ONE_LINE = ESC + '[1A'
+ERASE_LINE    = ESC + '[2K'
+
+# globals
+io_lock      = threading.Lock()
+history_lock = threading.Lock()
+history      = deque()
+
+# helpers
+def reset_cursor():
+    return BACK_ONE_LINE + ERASE_LINE
+
+def now():
+    return datetime.datetime.now()
+
+def sec2minsec(seconds):
+    return (seconds // 60, seconds % 60)
+
+def show_failure(message):
+    with io_lock:
+        print(reset_cursor() + message + '\n')
+
+def show_progress(*args):
+    with io_lock:
+        print(*args, file=sys.stderr)
+
+# functions
+def thread_body(input_path, start_time):
+
+    if 'smt25' in input_path:
+        language = SMT_25_STRING
+    else:
+        language = SMT_20_STRING
+
+    # try to scan
+    try:
+        tokens = scan_file(input_path, language)
+    except IndexError as e:
+        show_failure('failed scanning ' + input_path)
+    except Exception as e:
+        with io_lock:
+            traceback.print_exc()
+
+    # if scanned, try to parse
+    else:
+        try:
+            expressions = parse_tokens(tokens, language)
+        except IndexError as e:
+            show_failure('failed parsing ' + input_path)
+        except Exception as e:
+            with io_lock:
+                traceback.print_exc()
+
+    # evict old history if needed
+    if len(history) >= MAX_HISTORY:
+        history.popleft()
+
+    # record run time
+    run_time = now() - start_time
+    with history_lock:
+        history.append(run_time.microseconds / 1000000)
+
+def usage():
+    print('Usage', sys.argv[0], 'problem_list [problem_list [...]]', file=sys.stderr)
+
+def main():
+
+    # get args
+    list_paths = sys.argv[1:]
+
+    # check args
+    if len(list_paths) < 1:
+        usage()
+        exit(1)
+
+    # read input lists
+    inputs = []
+    for list_path in list_paths:
+        with open(list_path, 'r') as list_file:
+            inputs += [line.strip() for line in list_file.readlines()]
+
+    # bookkeeping
+    threads    = []
+    num_done   = 0
+    num_total  = len(inputs)
+    start_time = now()
+
+    # print newline to start update line
+    show_progress('')
+
+    # go through all files
+    for path in inputs:
+
+        # wait for a thread to finish if too many are running
+        if len(threads) > MAX_THREADS:
+            thread.join()
+
+        # run the thread
+        thread = threading.Thread(target=thread_body, args=(path, now()))
+        thread.start()
+        threads.append(thread)
+
+        # update bookkeeping
+        num_done += 1
+
+        # get average run time
+        with history_lock:
+            if len(history) > 0:
+                sec_per_run = sum(history) / len(history)
+            else:
+                sec_per_run = 0.5
+
+        # calculate progress
+        num_left           = num_total - num_done
+        percent_left       = (float(num_done) / float(num_total)) * 100.0
+        time_left          = int(float(sec_per_run) * float(num_left))
+        min_left, sec_left = sec2minsec(time_left)
+
+        # format progress
+        seconds_progress = '{:.0f}s'.format(sec_left)
+        minutes_progress = '{:.0f}m'.format(min_left)
+        time_progress    = seconds_progress
+
+        if min_left > 0:
+            time_progress = minutes_progress + ' ' + time_progress
+
+        progress = '{} / {} ({:.2f}%) done; {} left ({:.6f} s per)'.format(
+            num_done,
+            num_total,
+            percent_left,
+            time_progress,
+            sec_per_run
+        )
+
+        # show progress
+        show_progress(reset_cursor() + progress)
+
+    # wait for the remaining threads to finish
+    for thread in threads:
+        thread.join()
+
+    # print final results
+    end_time             = now()
+    run_time             = end_time - start_time
+    min_total, sec_total = sec2minsec(run_time.seconds)
+    sec_per_run          = run_time.seconds / num_done
+    show_progress('finished in {}m {}s, {:.4f}s per run'.format(min_total, sec_total, sec_per_run))
+
+if __name__ == '__main__':
+    main()

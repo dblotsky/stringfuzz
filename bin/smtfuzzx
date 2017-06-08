@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+
+'''
+The fuzzer tool that transforms existing problems.
+'''
+
+import sys
+import argparse
+
+from smtfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from smtfuzz.transformers import unprintable
+from smtfuzz.generator import generate
+
+# constants
+UNPRINTABLE = 'unprintable'
+
+TRANSFORMERS = {
+    UNPRINTABLE: unprintable
+}
+
+def main():
+
+    # create arg parser
+    parser = argparse.ArgumentParser(description='SMTLIB 2.* problem transformer.')
+    parser.add_argument(
+        'file',
+        nargs   = '?',
+        default = sys.stdin,
+        type    = argparse.FileType('r'),
+        help    = 'input file (default: stdin)'
+    )
+    parser.add_argument(
+        '--in-lang',
+        '-i',
+        dest    = 'input_language',
+        metavar = 'L',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'input language (default: {})'.format(SMT_25_STRING)
+    )
+    parser.add_argument(
+        '--out-lang',
+        '-o',
+        dest    = 'output_language',
+        metavar = 'L',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'output language (default: {})'.format(SMT_25_STRING)
+    )
+    parser.add_argument(
+        'transformer',
+        type    = str,
+        choices = TRANSFORMERS.keys(),
+        help    = 'transformation to perform'
+    )
+
+    # parse args
+    args = parser.parse_args()
+
+    # get transformer
+    transformer = TRANSFORMERS[args.transformer]
+
+    # read input
+    raw_in = args.file.read()
+
+    # run transformer
+    try:
+        transformed = transformer(raw_in, args.input_language)
+    except IndexError as e:
+        print(e, file=sys.stderr)
+        return 1
+
+    # print putput
+    raw_out = generate(transformed, args.output_language)
+    print(raw_out)
+
+if __name__ == '__main__':
+    main()

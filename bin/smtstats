@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+'''
+Prints stats about problems.
+'''
+
+import sys
+import argparse
+
+from smtfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from smtfuzz.parser import parse
+from smtfuzz.analyser import analyse
+from smtfuzz.ast import StringLitNode
+
+def main():
+
+    # create arg parser
+    parser = argparse.ArgumentParser(description='Analyse an SMT 2.* file.')
+    parser.add_argument(
+        'file',
+        nargs   = '?',
+        default = sys.stdin,
+        type    = argparse.FileType('r'),
+        help    = 'input file (default: stdin)'
+    )
+    parser.add_argument(
+        '--language',
+        '-l',
+        dest    = 'language',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'input language (default: {})'.format(SMT_25_STRING)
+    )
+
+    # parse args
+    args = parser.parse_args()
+
+    # parse input
+    try:
+        expressions = parse(args.file.read(), args.language)
+
+    # handle errors
+    except IndexError as e:
+        print(e, file=sys.stderr)
+        return 1
+
+    # get stats
+    points, variables, literals = analyse(expressions)
+    str_literals = [l for l in literals if isinstance(l, StringLitNode)]
+
+    # compute stats
+    if len(str_literals) > 1:
+        avg_literal_length = sum(map(len, str_literals)) / len(str_literals)
+    else:
+        avg_literal_length = 0
+
+    if len(points) > 1:
+        max_depth   = max(p.depth for p in points)
+        max_nesting = max(p.nesting for p in points if p.expression.name == 'Concat')
+    else:
+        max_depth   = 0
+        max_nesting = 0
+
+    # print stats
+    print('stats')
+    print('=========')
+    print('# of expressions:         ', len(points))
+    print('# of variables:           ', len(variables))
+    print('# of literals:            ', len(literals))
+    print('# of string literals:     ', len(str_literals))
+    print('avg. length of literals:  ', '{:.4f}'.format(avg_literal_length))
+    print('max expression depth:     ', max_depth)
+    print('max concat nesting level: ', max_nesting)
+
+    return 0
+
+if __name__ == '__main__':
+    main()
