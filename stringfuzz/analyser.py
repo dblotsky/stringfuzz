@@ -1,7 +1,7 @@
 import re
 
 from collections import namedtuple
-from smtfuzz.ast_walker import ASTWalker
+from stringfuzz.ast_walker import ASTWalker
 
 __all__ = [
     'analyse',
@@ -65,7 +65,7 @@ class StatsWalker(ASTWalker):
         # push nesting if we're at least one expression deep
         if self.depth > 1:
 
-            if self.expression.name == expression.name:
+            if self.expression.symbol == expression.symbol:
                 new_nesting = self.nesting + 1
             else:
                 new_nesting = ZERO_DEPTH

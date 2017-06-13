@@ -1,6 +1,6 @@
 import re
 
-from smtfuzz.constants import *
+from stringfuzz.constants import *
 
 __all__ = [
     'scan',
@@ -25,57 +25,60 @@ def make_whitespace(s, w): return Token('WHITESPACE', w)
 def make_identifier(s, w): return Token('IDENTIFIER', w)
 def make_lparen(s, w):     return Token('LPAREN', w)
 def make_rparen(s, w):     return Token('RPAREN', w)
-def make_expr(s, w):       return Token('EXPRESSION', w)
 def make_setting(s, w):    return Token('SETTING', w)
 def make_sort(s, w):       return Token('SORT', w)
 def make_string_lit(s, w): return Token('STRING_LIT', w[1:-1])
 def make_bool_lit(s, w):   return Token('BOOL_LIT', w)
 def make_int_lit(s, w):    return Token('INT_LIT', w)
+def make_sym(s, w):        return Token('SYMBOL', w)
+
+# specific symbol tokens
+def make_concat(s, w): return Token('CONCAT', w)
 
 # token lists
 SMT_20_TOKENS = [
     (r'Int',  make_sort),
     (r'Bool', make_sort),
 
-    (r'ite', make_expr),
-    (r'not', make_expr),
-    (r'and', make_expr),
-    (r'or',  make_expr),
+    (r'ite', make_sym),
+    (r'not', make_sym),
+    (r'and', make_sym),
+    (r'or',  make_sym),
 
-    (r'set-logic',        make_expr),
-    (r'set-option',       make_expr),
-    (r'set-info',         make_expr),
-    (r'declare-sort',     make_expr),
-    (r'define-sort',      make_expr),
-    (r'declare-fun',      make_expr),
-    (r'define-fun',       make_expr),
-    (r'declare-const',    make_expr),
-    (r'define-const',     make_expr),
-    (r'declare-variable', make_expr),
-    (r'define-variable',  make_expr),
-    (r'push',             make_expr),
-    (r'pop',              make_expr),
-    (r'assert',           make_expr),
-    (r'check-sat',        make_expr),
-    (r'get-assertions',   make_expr),
-    (r'get-proof',        make_expr),
-    (r'get-model',        make_expr),
-    (r'get-unsat-core',   make_expr),
-    (r'get-value',        make_expr),
-    (r'get-assignment',   make_expr),
-    (r'get-option',       make_expr),
-    (r'get-info',         make_expr),
-    (r'exit',             make_expr),
+    (r'set-logic',        make_sym),
+    (r'set-option',       make_sym),
+    (r'set-info',         make_sym),
+    (r'declare-sort',     make_sym),
+    (r'define-sort',      make_sym),
+    (r'declare-fun',      make_sym),
+    (r'define-fun',       make_sym),
+    (r'declare-const',    make_sym),
+    (r'define-const',     make_sym),
+    (r'declare-variable', make_sym),
+    (r'define-variable',  make_sym),
+    (r'push',             make_sym),
+    (r'pop',              make_sym),
+    (r'assert',           make_sym),
+    (r'check-sat',        make_sym),
+    (r'get-assertions',   make_sym),
+    (r'get-proof',        make_sym),
+    (r'get-model',        make_sym),
+    (r'get-unsat-core',   make_sym),
+    (r'get-value',        make_sym),
+    (r'get-assignment',   make_sym),
+    (r'get-option',       make_sym),
+    (r'get-info',         make_sym),
+    (r'exit',             make_sym),
 
-    (r'\+',  make_expr),
-    (r'-',   make_expr),
-    (r'\*',  make_expr),
-    (r'=',   make_expr),
-    (r'<=',  make_expr),
-    (r'<',   make_expr),
-    (r'>=',  make_expr),
-    (r'>',   make_expr),
-    (r'div', make_expr),
+    (r'\+',  make_sym),
+    (r'-',   make_sym),
+    (r'\*',  make_sym),
+    (r'=',   make_sym),
+    (r'<=',  make_sym),
+    (r'<',   make_sym),
+    (r'>=',  make_sym),
+    (r'>',   make_sym),
+    (r'div', make_sym),
 
     (r'\s+', make_whitespace),
     (r'\(', make_lparen),
@@ -90,18 +93,18 @@ SMT_20_TOKENS = [
 SMT_20_STRING_TOKENS = [
     (r'String', make_sort),
 
-    (r'CharAt',      make_expr),
-    (r'Concat',      make_expr),
-    (r'Contains',    make_expr),
-    (r'EndsWith',    make_expr),
-    (r'IndexOf',     make_expr),
-    (r'Length',      make_expr),
-    (r'RegexIn',     make_expr),
-    (r'RegexConcat', make_expr),
-    (r'Replace',     make_expr),
-    (r'StartsWith',  make_expr),
-    (r'Str2Reg',     make_expr),
-    (r'Substring',   make_expr),
+    (r'CharAt',      make_sym),
+    (r'Concat',      make_concat),
+    (r'Contains',    make_sym),
+    (r'EndsWith',    make_sym),
+    (r'IndexOf',     make_sym),
+    (r'Length',      make_sym),
+    (r'RegexIn',     make_sym),
+    (r'RegexConcat', make_sym),
+    (r'Replace',     make_sym),
+    (r'StartsWith',  make_sym),
+    (r'Str2Reg',     make_sym),
+    (r'Substring',   make_sym),
 
     (r'"(?:\\\"|[^"])*"', make_string_lit),
 ]
@@ -109,26 +112,26 @@ SMT_20_STRING_TOKENS = [
 SMT_25_STRING_TOKENS = [
     (r'String', make_sort),
 
-    (r'str\.to-int',   make_expr),
-    (r'str\.from-int', make_expr),
-    (r'str\.\+\+',     make_expr),
-    (r'str\.at',       make_expr),
-    (r'str\.contains', make_expr),
-    (r'str\.from-int', make_expr),
-    (r'str\.in\.re',   make_expr),
-    (r'str\.indexof',  make_expr),
-    (r'str\.len',      make_expr),
-    (r'str\.prefixof', make_expr),
-    (r'str\.replace',  make_expr),
-    (r'str\.substr',   make_expr),
-    (r'str\.suffixof', make_expr),
-    (r'str\.to-int',   make_expr),
-    (r'str\.to\.re',   make_expr),
-    (r're\.\*',        make_expr),
-    (r're\.\+',        make_expr),
-    (r're\.\+\+',      make_expr),
-    (r're\.range',     make_expr),
-    (r're\.union',     make_expr),
+    (r'str\.to-int',   make_sym),
+    (r'str\.from-int', make_sym),
+    (r'str\.\+\+',     make_concat),
+    (r'str\.at',       make_sym),
+    (r'str\.contains', make_sym),
+    (r'str\.from-int', make_sym),
+    (r'str\.in\.re',   make_sym),
+    (r'str\.indexof',  make_sym),
+    (r'str\.len',      make_sym),
+    (r'str\.prefixof', make_sym),
+    (r'str\.replace',  make_sym),
+    (r'str\.substr',   make_sym),
+    (r'str\.suffixof', make_sym),
+    (r'str\.to-int',   make_sym),
+    (r'str\.to\.re',   make_sym),
+    (r're\.\*',        make_sym),
+    (r're\.\+',        make_sym),
+    (r're\.\+\+',      make_sym),
+    (r're\.range',     make_sym),
+    (r're\.union',     make_sym),
 
     (r'"(?:""|[^"])*"', make_string_lit),
 ]

@@ -7,10 +7,10 @@ Prints stats about problems.
 import sys
 import argparse
 
-from smtfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from smtfuzz.parser import parse
-from smtfuzz.analyser import analyse
-from smtfuzz.ast import StringLitNode
+from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.parser import parse
+from stringfuzz.analyser import analyse
+from stringfuzz.ast import StringLitNode
 
 def main():
 
@@ -57,7 +57,7 @@ def main():
 
     if len(points) > 1:
         max_depth   = max(p.depth for p in points)
-        max_nesting = max(p.nesting for p in points if p.expression.name == 'Concat')
+        max_nesting = max(p.nesting for p in points if p.expression.symbol == 'Concat')
     else:
         max_depth   = 0
         max_nesting = 0

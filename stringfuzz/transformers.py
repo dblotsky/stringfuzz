@@ -3,8 +3,8 @@ import sys
 import random
 import string
 
-from smtfuzz.ast import ExpressionNode, StringLitNode
-from smtfuzz.parser import parse
+from stringfuzz.ast import ExpressionNode, StringLitNode
+from stringfuzz.parser import parse
 
 __all__ = [
     'unprintable',

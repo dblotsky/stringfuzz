@@ -7,8 +7,8 @@ CLI for the parser. Outputs AST.
 import sys
 import argparse
 
-from smtfuzz.constants import LANGUAGES, SMT_20_STRING
-from smtfuzz.parser import parse
+from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.parser import parse
 
 def main():
 

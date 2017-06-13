@@ -7,9 +7,9 @@ The fuzzer tool that transforms existing problems.
 import sys
 import argparse
 
-from smtfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from smtfuzz.transformers import unprintable
-from smtfuzz.generator import generate
+from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.transformers import unprintable
+from stringfuzz.generator import generate
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -23,8 +23,10 @@ def main():
     # create arg parser
     parser = argparse.ArgumentParser(description='SMTLIB 2.* problem transformer.')
     parser.add_argument(
-        'file',
-        nargs   = '?',
+        '--file',
+        '-f',
+        dest    = 'file',
+        metavar = 'F',
         default = sys.stdin,
         type    = argparse.FileType('r'),
         help    = 'input file (default: stdin)'

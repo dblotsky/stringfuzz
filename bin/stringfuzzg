@@ -7,9 +7,9 @@ The fuzzer tool that generates new problems.
 import sys
 import argparse
 
-from smtfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from smtfuzz.parser import parse
-from smtfuzz.generators import concats, randomness, nonsense
+from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.parser import parse
+from stringfuzz.generators import concats, randomness, nonsense
 
 # constants
 CONCATS  = 'concats'
@@ -38,7 +38,7 @@ def main():
         type    = str,
         choices = LANGUAGES,
         default = SMT_25_STRING,
-        help    = 'input language (default: {})'.format(SMT_25_STRING)
+        help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
 
     # get subparsers

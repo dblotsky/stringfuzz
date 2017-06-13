@@ -1,4 +1,4 @@
-from smtfuzz.ast import *
+from stringfuzz.ast import *
 
 __all__ = [
     'ASTWalker'

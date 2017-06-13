@@ -5,13 +5,13 @@ import os
 from setuptools import setup
 
 setup(
-    name         = 'smtfuzz',
+    name         = 'stringfuzz',
     version      = '0.1',
-    description  = 'Fuzzer for SMTLIB 2.0 solvers.',
+    description  = 'Fuzzer for SMTLIB 2.x solvers.',
     author       = 'Dmitry Blotsky',
     author_email = 'dmitry.blotsky@gmail.com',
-    url          = 'https://github.com/dblotsky/thesis',
-    scripts      = ['bin/smtfuzzx', 'bin/smtfuzzg', 'bin/smtstats'],
-    packages     = ['smtfuzz'],
-    package_dir  = {'smtfuzz': 'smtfuzz'},
+    url          = 'https://github.com/dblotsky/stringfuzz',
+    scripts      = ['bin/stringfuzzx', 'bin/stringfuzzg', 'bin/stringstats'],
+    packages     = ['stringfuzz'],
+    package_dir  = {'stringfuzz': 'stringfuzz'},
 )

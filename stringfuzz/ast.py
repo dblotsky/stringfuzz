@@ -13,7 +13,9 @@ __all__ = [
     'SortNode',
     'SettingNode',
     'IdentifierNode',
+    'ArgsNode',
     'ExpressionNode',
+    'ConcatNode',
 ]
 
 # constants
@@ -43,6 +45,9 @@ class LiteralNode(ASTNode):
     def __str__(self):
         return self.value
 
+    def __repr__(self):
+        return 'Literal({})'.format(self.value)
+
 class BoolLitNode(LiteralNode):
 
     def __str__(self):
@@ -51,10 +56,16 @@ class BoolLitNode(LiteralNode):
         else:
             return 'false'
 
+    def __repr__(self):
+        return 'BoolLit({})'.format(self.value)
+
 class IntLitNode(LiteralNode):
 
     def __str__(self):
         return self.value
+
+    def __repr__(self):
+        return 'IntLit({})'.format(self.value)
 
 class StringLitNode(LiteralNode):
 
@@ -64,6 +75,9 @@ class StringLitNode(LiteralNode):
     def __len__(self):
         return len(self.value)
 
+    def __repr__(self):
+        return 'StringLit({!r})'.format(self.value)
+
 class SortNode(ASTNode):
 
     def __init__(self, sort):
@@ -71,6 +85,9 @@ class SortNode(ASTNode):
 
     def __str__(self):
         return self.sort
+
+    def __repr__(self):
+        return 'Sort({})'.format(self.sort)
 
 class SettingNode(ASTNode):
 
@@ -80,6 +97,9 @@ class SettingNode(ASTNode):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return 'Setting({})'.format(self.name)
+
 class IdentifierNode(ASTNode):
 
     def __init__(self, name):
@@ -88,20 +108,39 @@ class IdentifierNode(ASTNode):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return 'Identifier({})'.format(self.name)
+
+class ArgsNode(ASTNode):
+
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return '()'
+
+    def __repr__(self):
+        return 'Args()'
+
 class ExpressionNode(ASTNode):
 
-    def __init__(self, name, body):
-        self.name = name
-        self.body = body
+    def __init__(self, symbol, body):
+        assert symbol is not None
+        self.symbol = symbol
+        self.body   = body
 
     def __repr__(self):
 
-        contents = ''
+        contents = self.symbol
 
-        if self.name:
-            contents += self.name
+        node_name = self.__class__.__name__.replace('Node', '')
 
         if len(self.body) > 0:
-            contents += ' ' + ' '.join(map(str, self.body))
+            contents += ' ' + ' '.join(map(repr, self.body))
 
-        return '(' + contents + ')'
+        return '{}({})'.format(node_name, contents)
+
+class ConcatNode(ExpressionNode):
+
+    def __init__(self, a, b):
+        super(ConcatNode, self).__init__('Concat', [a, b])

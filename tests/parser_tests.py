@@ -1,7 +1,7 @@
 import unittest
 
-from smtfuzz.scanner import SMT_20, SMT_20_STRING, SMT_25_STRING
-from smtfuzz.parser import parse, parse_file
+from stringfuzz.scanner import SMT_20, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.parser import parse, parse_file
 
 class TestParser(unittest.TestCase):
 
@@ -19,11 +19,51 @@ class TestParser(unittest.TestCase):
         self.assertListEqual([], parse('', SMT_20_STRING))
         self.assertListEqual([], parse('', SMT_25_STRING))
 
-    def test_simple(self):
+    def test_trivial(self):
         expressions = parse('(check-sat)', SMT_20)
         self.assertEqual(len(expressions), 1)
-        self.assertEqual(expressions[0].name, 'check-sat')
+        self.assertEqual(expressions[0].symbol, 'check-sat')
         self.assertListEqual(expressions[0].body, [])
+
+    def test_simple_smt_20(self):
+        expressions = parse('''
+            (declare-fun X () String)
+            (assert (= X "solution"))
+            (check-sat)
+        ''', SMT_20_STRING)
+
+        self.assertEqual(len(expressions), 3)
+
+        self.assertEqual(expressions[0].symbol, 'declare-fun')
+        self.assertEqual(expressions[0].body[0].name, 'X')
+        self.assertEqual(expressions[0].body[2].sort, 'String')
+
+        self.assertEqual(expressions[1].symbol, 'assert')
+        self.assertEqual(expressions[1].body[0].symbol, '=')
+        self.assertEqual(expressions[1].body[0].body[0].name, 'X')
+        self.assertEqual(expressions[1].body[0].body[1].value, 'solution')
+
+        self.assertEqual(expressions[2].symbol, 'check-sat')
+
+    def test_simple_smt_25(self):
+        expressions = parse('''
+            (declare-fun X () String)
+            (assert (= X "solution"))
+            (check-sat)
+        ''', SMT_25_STRING)
+
+        self.assertEqual(len(expressions), 3)
+
+        self.assertEqual(expressions[0].symbol, 'declare-fun')
+        self.assertEqual(expressions[0].body[0].name, 'X')
+        self.assertEqual(expressions[0].body[2].sort, 'String')
+
+        self.assertEqual(expressions[1].symbol, 'assert')
+        self.assertEqual(expressions[1].body[0].symbol, '=')
+        self.assertEqual(expressions[1].body[0].body[0].name, 'X')
+        self.assertEqual(expressions[1].body[0].body[1].value, 'solution')
+
+        self.assertEqual(expressions[2].symbol, 'check-sat')
 
 if __name__ == '__main__':
     unittest.main()

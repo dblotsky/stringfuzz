@@ -1,7 +1,7 @@
 import unittest
 
-from smtfuzz.constants import SMT_20, SMT_20_STRING, SMT_25_STRING
-from smtfuzz.scanner import scan, scan_file
+from stringfuzz.constants import SMT_20, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.scanner import scan, scan_file
 
 class TestScanner(unittest.TestCase):
 
@@ -29,7 +29,7 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens[0].name, 'LPAREN')
         self.assertEqual(tokens[0].value, '(')
-        self.assertEqual(tokens[1].name, 'EXPRESSION')
+        self.assertEqual(tokens[1].name, 'SYMBOL')
         self.assertEqual(tokens[1].value, 'check-sat')
         self.assertEqual(tokens[2].name, 'RPAREN')
         self.assertEqual(tokens[2].value, ')')

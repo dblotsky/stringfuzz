@@ -2,8 +2,8 @@ import re
 import random
 import string
 
-from smtfuzz.ast import IdentifierNode, ExpressionNode, StringLitNode
-from smtfuzz.generator import generate
+from stringfuzz.ast import IdentifierNode, ExpressionNode, StringLitNode, ConcatNode
+from stringfuzz.generator import generate
 
 __all__ = [
     'concats',
@@ -30,7 +30,7 @@ def _equal(a, b):
     return ExpressionNode('=', [a, b])
 
 def _concat(a, b):
-    return ExpressionNode('str.++', [a, b])
+    return ConcatNode(a, b)
 
 def _declare(identifier):
     return ExpressionNode('declare-fun', [identifier, ExpressionNode('', []), 'String'])

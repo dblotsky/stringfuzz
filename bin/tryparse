@@ -12,9 +12,9 @@ import traceback
 
 from collections import deque
 
-from smtfuzz.constants import SMT_20_STRING, SMT_25_STRING
-from smtfuzz.scanner import scan_file
-from smtfuzz.parser import parse_file, parse_tokens
+from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING
+from stringfuzz.scanner import scan_file
+from stringfuzz.parser import parse_file, parse_tokens
 
 # constants
 MAX_THREADS   = 8

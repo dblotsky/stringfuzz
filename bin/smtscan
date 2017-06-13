@@ -7,8 +7,8 @@ CLI for the scanner. Outputs tokens.
 import sys
 import argparse
 
-from smtfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from smtfuzz.scanner import scan
+from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.scanner import scan
 
 def main():
 
