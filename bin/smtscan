@@ -25,7 +25,6 @@ def main():
         '--language',
         '-l',
         dest    = 'language',
-        metavar = 'L',
         type    = str,
         choices = LANGUAGES,
         default = SMT_25_STRING,

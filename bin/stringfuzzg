@@ -9,7 +9,7 @@ import argparse
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
-from stringfuzz.generators import concats, randomness, nonsense
+from stringfuzz.generators import concats, randomness, nonsense, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 
 # constants
 CONCATS  = 'concats'
@@ -22,9 +22,13 @@ GENERATORS = {
     NONSENSE: nonsense
 }
 
-DEFAULT_LENGTH   = 10
-DEFAULT_DEPTH    = 5
-DEFAULT_SOLUTION = 'solution'
+DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
+
+# defaults
+DEFAULT_LENGTH     = 10
+DEFAULT_DEPTH      = 5
+DEFAULT_SOLUTION   = 'solution'
+DEFAULT_DEPTH_TYPE = SYNTACTIC_DEPTH
 
 def main():
 
@@ -34,7 +38,6 @@ def main():
         '--language',
         '-l',
         dest    = 'language',
-        metavar = 'L',
         type    = str,
         choices = LANGUAGES,
         default = SMT_25_STRING,
@@ -55,6 +58,15 @@ def main():
         type    = int,
         default = DEFAULT_DEPTH,
         help    = 'depth of the concats (default: {})'.format(DEFAULT_DEPTH)
+    )
+    concats_parser.add_argument(
+        '--depth-type',
+        '-t',
+        dest    = 'depth_type',
+        type    = str,
+        choices = DEPTH_TYPES,
+        default = DEFAULT_DEPTH_TYPE,
+        help    = 'type of depth (default: {})'.format(DEFAULT_DEPTH_TYPE)
     )
     concats_parser.add_argument(
         '--solution',
