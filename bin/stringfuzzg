@@ -9,17 +9,17 @@ import argparse
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
-from stringfuzz.generators import concats, randomness, nonsense, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
+from stringfuzz.generators import concats, random_text, random_ast, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 
 # constants
-CONCATS  = 'concats'
-RANDOM   = 'random'
-NONSENSE = 'nonsense'
+CONCATS     = 'concats'
+RANDOM_TEXT = 'random-text'
+RANDOM_AST  = 'random-ast'
 
 GENERATORS = {
-    CONCATS:  concats,
-    RANDOM:   randomness,
-    NONSENSE: nonsense
+    CONCATS:     concats,
+    RANDOM_TEXT: random_text,
+    RANDOM_AST:  random_ast
 }
 
 DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
@@ -28,6 +28,7 @@ DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
 DEFAULT_LENGTH     = 10
 DEFAULT_DEPTH      = 5
 DEFAULT_SOLUTION   = 'solution'
+DEFAULT_BALANCED    = False
 DEFAULT_DEPTH_TYPE = SYNTACTIC_DEPTH
 
 def main():
@@ -77,9 +78,16 @@ def main():
         default = DEFAULT_SOLUTION,
         help    = 'expected solution (default: {!r})'.format(DEFAULT_SOLUTION)
     )
+    concats_parser.add_argument(
+        '--balanced',
+        '-b',
+        action  = 'store_true',
+        default = DEFAULT_BALANCED,
+        help    = 'flag for balanced tree (default: {!r})'.format(DEFAULT_BALANCED)
+    )
 
-    # randomness fuzzer
-    random_parser = subparsers.add_parser(RANDOM, help='totally random text')
+    # random text fuzzer
+    random_parser = subparsers.add_parser(RANDOM_TEXT, help='totally random text')
     random_parser.add_argument(
         '--length',
         '-l',
@@ -90,8 +98,8 @@ def main():
         help    = 'length of the text (default: {})'.format(DEFAULT_LENGTH)
     )
 
-    # # nonsense fuzzer
-    # nonsense_parser = subparsers.add_parser(NONSENSE, help='random but syntactically valid problem')
+    # # random_ast fuzzer
+    # random_ast_parser = subparsers.add_parser(RANDOM_AST, help='random but syntactically valid problem')
 
     # parse args
     args = parser.parse_args()

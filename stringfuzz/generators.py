@@ -2,61 +2,38 @@ import re
 import random
 import string
 
-from stringfuzz.ast import IdentifierNode, ExpressionNode, StringLitNode, ConcatNode
 from stringfuzz.generator import generate
+from stringfuzz.smt import *
 
 __all__ = [
     'concats',
-    'randomness',
-    'nonsense'
+    'random_text',
+    'random_ast'
 ]
 
 # constants
 RANDOM_CHARS = string.printable
-VAR_PREFIX   = 'var'
-CONST_PREFIX = 'const'
 
 SYNTACTIC_DEPTH = 'syntactic'
 SEMANTIC_DEPTH  = 'semantic'
 
 # concats fuzzer
-def _var(suffix):
-    return IdentifierNode('{}{}'.format(VAR_PREFIX, suffix))
-
-def _str_lit(value):
-    return StringLitNode(value)
-
-def _assert(exp):
-    return ExpressionNode('assert', [exp])
-
-def _equal(a, b):
-    return ExpressionNode('=', [a, b])
-
-def _concat(a, b):
-    return ConcatNode(a, b)
-
-def _declare_var(identifier):
-    return ExpressionNode('declare-fun', [identifier, ExpressionNode('', []), 'String'])
-
-def _declare_const(identifier):
-    return ExpressionNode('declare-const', [identifier, ExpressionNode('', []), 'String'])
-
-def _check_sat():
-    return ExpressionNode('check-sat', [])
-
 def set_concat(r, a, b):
-    return _assert(_equal(r, _concat(a, b)))
+    return smt_assert(smt_equal(r, smt_concat(a, b)))
 
 def set_equal(a, b):
-    return _assert(_equal(a, b))
+    return smt_assert(smt_equal(a, b))
 
-def make_semantic_concats(depth):
+def make_semantic_concats(depth, balanced):
+
+    if balanced is True:
+        raise ValueError('balanced trees with semantic concats are unsupported')
 
     # compute number of variables
-    num_vars = (depth + 1) * 2
+    num_vars = (depth * 2) + 1
 
     # make variable names
-    variables = [_var(i) for i in range(num_vars)]
+    variables = [smt_var(i) for i in range(num_vars)]
 
     # make concats
     expressions = []
@@ -66,60 +43,87 @@ def make_semantic_concats(depth):
 
     return variables, [], expressions
 
-def make_syntactic_concats(depth):
+def make_syntactic_concats(depth, balanced):
 
-    def concats_helper(variables, depth):
+    def concats_helper(depth, balanced):
+
+        # base case
         if depth < 1:
-            return variables[0]
-        return _concat(variables[0], concats_helper(variables[1:], depth - 1))
+            new_var = smt_new_var()
+            return [new_var], new_var
 
-    # make variable names
-    variables = [_var(i) for i in range(depth + 2)]
+        # make right side
+        right_vars, right_expr = concats_helper(depth - 1, balanced)
+
+        # make left side
+        if balanced is True:
+            left_vars, left_expr = concats_helper(depth - 1, balanced)
+        else:
+            left_vars, left_expr = concats_helper(0, balanced)
+
+        # build return value
+        all_vars = left_vars + right_vars
+        concat   = smt_concat(left_expr, right_expr)
+
+        return all_vars, concat
+
+    # make first variable
+    first_var = smt_new_var()
+
+    # create return values
+    variables   = [first_var]
+    constants   = []
+    expressions = []
 
     # make deep concat
     if depth > 0:
-        expressions = [_assert(_equal(variables[0], concats_helper(variables[1:], depth)))]
-    else:
-        expressions = []
+        concat_variables, concat_expr = concats_helper(depth, balanced)
 
-    return variables, [], expressions
+        variables  += concat_variables
+        expressions = [set_equal(first_var, concat_expr)]
 
-def make_concats(depth, depth_type, solution):
+    return variables, constants, expressions
+
+def make_concats(depth, depth_type, solution, balanced):
 
     # generate problem components
     if depth_type == SEMANTIC_DEPTH:
-        variables, constants, expressions = make_semantic_concats(depth)
+        variables, constants, expressions = make_semantic_concats(depth, balanced)
 
     else:
-        variables, constants, expressions = make_syntactic_concats(depth)
+        variables, constants, expressions = make_syntactic_concats(depth, balanced)
+
+    # get first variable
+    first_var = variables[0]
 
     # create definitions
     definitions = []
-    definitions.extend([_declare_var(v) for v in variables])
-    definitions.extend([_declare_const(v) for v in constants])
+    definitions.extend([smt_declare_var(v) for v in variables])
+    definitions.extend([smt_declare_const(v) for v in constants])
 
     # set first variable to expected solution
-    expressions.append(set_equal(variables[0], _str_lit(solution)))
+    expressions.append(set_equal(first_var, smt_str_lit(solution)))
 
     # add sat-check
-    expressions.append(_check_sat())
+    expressions.append(smt_sat())
+    expressions.append(smt_model())
 
     return definitions + expressions
 
-# random fuzzer
-def make_randomness(length):
+# random text fuzzer
+def make_random_text(length):
     return ''.join(random.choice(RANDOM_CHARS) for i in range(length))
 
-# nonsense
-def make_nonsense():
+# random ast fuzzer
+def make_random_ast():
     return []
 
 # public API
 def concats(language, *args, **kwargs):
     return generate(make_concats(*args, **kwargs), language)
 
-def randomness(language, *args, **kwargs):
-    return make_randomness(*args, **kwargs)
+def random_text(language, *args, **kwargs):
+    return make_random_text(*args, **kwargs)
 
-def nonsense(language, *args, **kwargs):
-    return generate(make_nonsense(*args, **kwargs), language)
+def random_ast(language, *args, **kwargs):
+    return generate(make_random_ast(*args, **kwargs), language)
