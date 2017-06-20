@@ -1,28 +1,28 @@
-import re
 import random
-import string
 
 from stringfuzz.generator import generate
+from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
 
 __all__ = [
     'concats',
-    'random_text',
-    'random_ast'
+    'SYNTACTIC_DEPTH',
+    'SEMANTIC_DEPTH',
 ]
 
 # constants
-RANDOM_CHARS = string.printable
-
 SYNTACTIC_DEPTH = 'syntactic'
 SEMANTIC_DEPTH  = 'semantic'
 
-# concats fuzzer
-def set_concat(r, a, b):
-    return smt_assert(smt_equal(r, smt_concat(a, b)))
-
+# functions
 def set_equal(a, b):
     return smt_assert(smt_equal(a, b))
+
+def set_concat(result, a, b):
+    return set_equal(result, smt_concat(a, b))
+
+def extract(character, string, index):
+    return set_equal(character, smt_at(string, index))
 
 def make_semantic_concats(depth, balanced):
 
@@ -84,9 +84,9 @@ def make_syntactic_concats(depth, balanced):
 
     return variables, constants, expressions
 
-def make_concats(depth, depth_type, solution, balanced):
+def make_concats(depth, depth_type, solution, balanced, num_extracts, max_extract_index):
 
-    # generate problem components
+    # generate concats
     if depth_type == SEMANTIC_DEPTH:
         variables, constants, expressions = make_semantic_concats(depth, balanced)
 
@@ -96,34 +96,58 @@ def make_concats(depth, depth_type, solution, balanced):
     # get first variable
     first_var = variables[0]
 
+    # validate args
+    max_num_extracts      = max_extract_index + 1
+    num_chars_in_vars     = max_num_extracts * len(variables)
+    num_chars_in_consts   = sum(map(len, constants))
+    num_possible_extracts = num_chars_in_vars + num_chars_in_consts
+    if num_extracts > num_possible_extracts:
+        raise ValueError('number of requested extracts exceeds number of possible unique extracts')
+
+    # set first variable to expected solution if one was given
+    if solution is not None:
+        expressions.append(set_equal(first_var, smt_str_lit(solution)))
+
+    # add extracts if required
+    if num_extracts > 0:
+
+        # create model to avoid contradictions
+        extract_model  = {var : list(range(max_num_extracts)) for var in variables}
+        remaining_vars = list(variables)
+
+        # shuffle indices in model
+        for indices in extract_model.values():
+            random.shuffle(indices)
+
+        # create the extracts
+        for i in range(num_extracts):
+
+            # randomly pick a variable and a char to extract from it
+            var_index = random.randrange(len(remaining_vars))
+            var       = remaining_vars[var_index]
+            char      = smt_str_lit(random.choice(ALPHABET))
+
+            # pop the first index from which to extract, without replacement
+            index = smt_int_lit(extract_model[var].pop())
+
+            # remove the variable if it can no longer be extracted from
+            num_remaining_indices = len(extract_model[var])
+            if num_remaining_indices < 1:
+                remaining_vars.pop(var_index)
+
+            # add extract
+            expressions.append(extract(char, var, index))
+
     # create definitions
     definitions = []
     definitions.extend([smt_declare_var(v) for v in variables])
     definitions.extend([smt_declare_const(v) for v in constants])
 
-    # set first variable to expected solution
-    expressions.append(set_equal(first_var, smt_str_lit(solution)))
-
     # add sat-check
     expressions.append(smt_sat())
-    expressions.append(smt_model())
 
     return definitions + expressions
-
-# random text fuzzer
-def make_random_text(length):
-    return ''.join(random.choice(RANDOM_CHARS) for i in range(length))
-
-# random ast fuzzer
-def make_random_ast():
-    return []
 
 # public API
 def concats(language, *args, **kwargs):
     return generate(make_concats(*args, **kwargs), language)
-
-def random_text(language, *args, **kwargs):
-    return make_random_text(*args, **kwargs)
-
-def random_ast(language, *args, **kwargs):
-    return generate(make_random_ast(*args, **kwargs), language)

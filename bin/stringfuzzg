@@ -6,6 +6,7 @@ The fuzzer tool that generates new problems.
 
 import sys
 import argparse
+import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
@@ -25,11 +26,15 @@ GENERATORS = {
 DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
 
 # defaults
-DEFAULT_LENGTH     = 10
-DEFAULT_DEPTH      = 5
-DEFAULT_SOLUTION   = 'solution'
-DEFAULT_BALANCED    = False
-DEFAULT_DEPTH_TYPE = SYNTACTIC_DEPTH
+DEFAULT_SEED = 0
+
+DEFAULT_LENGTH        = 10
+DEFAULT_DEPTH         = 5
+DEFAULT_SOLUTION      = None
+DEFAULT_BALANCED      = False
+DEFAULT_DEPTH_TYPE    = SYNTACTIC_DEPTH
+DEFAULT_EXTRACTED     = 0
+DEFAULT_EXTRACT_INDEX = 10
 
 def main():
 
@@ -43,6 +48,15 @@ def main():
         choices = LANGUAGES,
         default = SMT_25_STRING,
         help    = 'output language (default: {})'.format(SMT_25_STRING)
+    )
+    parser.add_argument(
+        '--seed',
+        '-r',
+        dest    = 'seed',
+        metavar = 'S',
+        type    = int,
+        default = DEFAULT_SEED,
+        help    = 'seed for random number generator (default: {})'.format(DEFAULT_SEED)
     )
 
     # get subparsers
@@ -79,6 +93,24 @@ def main():
         help    = 'expected solution (default: {!r})'.format(DEFAULT_SOLUTION)
     )
     concats_parser.add_argument(
+        '--extract',
+        '-e',
+        dest    = 'num_extracts',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_EXTRACTED,
+        help    = 'number of extracts to add (default: {})'.format(DEFAULT_EXTRACTED)
+    )
+    concats_parser.add_argument(
+        '--extract-max',
+        '-m',
+        dest    = 'max_extract_index',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_EXTRACT_INDEX,
+        help    = 'max index from which to extract (default: {})'.format(DEFAULT_EXTRACT_INDEX)
+    )
+    concats_parser.add_argument(
         '--balanced',
         '-b',
         action  = 'store_true',
@@ -108,16 +140,18 @@ def main():
     generator_name = args.generator
     generator      = GENERATORS[generator_name]
 
+    # seed the RNG
+    random.seed(args.seed)
+
     # get args as a dict
     # NOTE:
     #      argparse's Namespace object (which 'args' is) returns itself as a
     #      dict when vars() is called on it
     generator_args = vars(args)
 
-    # NOTE:
-    #      the returned dict still has the 'generator' key because we
-    #      added it during the call to add_subparsers(), so we remove it here
+    # pop arguments that shouldn't be passed on to the generator
     generator_args.pop('generator')
+    generator_args.pop('seed')
 
     # run the generator with the args
     print(generator(**generator_args))

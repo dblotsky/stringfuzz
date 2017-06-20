@@ -1,10 +1,13 @@
 import re
+import string
 
 from stringfuzz.constants import *
 
 __all__ = [
     'scan',
     'scan_file',
+    'ALPHABET',
+    'WHITESPACE',
 ]
 
 # data structures
@@ -34,6 +37,12 @@ def make_sym(s, w):        return Token('SYMBOL', w)
 
 # specific symbol tokens
 def make_concat(s, w): return Token('CONCAT', w)
+def make_at(s, w):     return Token('AT', w)
+def make_length(s, w): return Token('LENGTH', w)
+
+# constants
+ALPHABET   = string.digits + string.ascii_letters + string.punctuation
+WHITESPACE = string.whitespace
 
 # token lists
 SMT_20_TOKENS = [
@@ -93,12 +102,13 @@ SMT_20_TOKENS = [
 SMT_20_STRING_TOKENS = [
     (r'String', make_sort),
 
-    (r'CharAt',      make_sym),
+    (r'CharAt',      make_at),
     (r'Concat',      make_concat),
     (r'Contains',    make_sym),
     (r'EndsWith',    make_sym),
     (r'IndexOf',     make_sym),
-    (r'Length',      make_sym),
+    (r'Indexof',     make_sym),
+    (r'Length',      make_length),
     (r'RegexIn',     make_sym),
     (r'RegexConcat', make_sym),
     (r'Replace',     make_sym),
@@ -115,12 +125,12 @@ SMT_25_STRING_TOKENS = [
     (r'str\.to-int',   make_sym),
     (r'str\.from-int', make_sym),
     (r'str\.\+\+',     make_concat),
-    (r'str\.at',       make_sym),
+    (r'str\.at',       make_at),
     (r'str\.contains', make_sym),
     (r'str\.from-int', make_sym),
     (r'str\.in\.re',   make_sym),
     (r'str\.indexof',  make_sym),
-    (r'str\.len',      make_sym),
+    (r'str\.len',      make_length),
     (r'str\.prefixof', make_sym),
     (r'str\.replace',  make_sym),
     (r'str\.substr',   make_sym),

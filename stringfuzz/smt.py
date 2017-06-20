@@ -2,7 +2,7 @@
 Functions for creating ASTs.
 '''
 
-from stringfuzz.ast import IdentifierNode, ExpressionNode, StringLitNode, ConcatNode
+from stringfuzz.ast import *
 
 __all__ = [
     'smt_var',
@@ -10,9 +10,11 @@ __all__ = [
     'smt_new_var',
     'smt_new_const',
     'smt_str_lit',
+    'smt_int_lit',
     'smt_assert',
     'smt_equal',
     'smt_concat',
+    'smt_at',
     'smt_declare_var',
     'smt_declare_const',
     'smt_sat',
@@ -49,6 +51,9 @@ def smt_new_const():
 def smt_str_lit(value):
     return StringLitNode(value)
 
+def smt_int_lit(value):
+    return IntLitNode(value)
+
 def smt_assert(exp):
     return ExpressionNode('assert', [exp])
 
@@ -58,11 +63,17 @@ def smt_equal(a, b):
 def smt_concat(a, b):
     return ConcatNode(a, b)
 
+def smt_at(s, i):
+    return AtNode(s, i)
+
+def smt_len(a):
+    return LengthNode(a)
+
 def smt_declare_var(identifier):
-    return ExpressionNode('declare-fun', [identifier, ExpressionNode('', []), 'String'])
+    return ExpressionNode('declare-fun', [identifier, ArgsNode(), SortNode('String')])
 
 def smt_declare_const(identifier):
-    return ExpressionNode('declare-const', [identifier, ExpressionNode('', []), 'String'])
+    return ExpressionNode('declare-const', [identifier, ArgsNode(), SortNode('String')])
 
 def smt_sat():
     return ExpressionNode('check-sat', [])

@@ -81,6 +81,25 @@ def get_expression(s):
 
         return ConcatNode(a, b)
 
+    elif s.accept('AT'):
+
+        # get its two args
+        a = get_arg(s)
+        b = get_arg(s)
+
+        s.expect('RPAREN')
+
+        return AtNode(a, b)
+
+    elif s.accept('LENGTH'):
+
+        # get its two args
+        a = get_arg(s)
+
+        s.expect('RPAREN')
+
+        return LengthNode(a)
+
     # expression case
     body   = []
     symbol = s.expect('SYMBOL').value
