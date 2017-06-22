@@ -1,6 +1,6 @@
 import random
 
-from stringfuzz.generator import generate
+from stringfuzz.generators.util import call_generate
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
 
@@ -149,5 +149,5 @@ def make_concats(depth, depth_type, solution, balanced, num_extracts, max_extrac
     return definitions + expressions
 
 # public API
-def concats(language, *args, **kwargs):
-    return generate(make_concats(*args, **kwargs), language)
+def concats(language, produce_models, *args, **kwargs):
+    return call_generate(make_concats(*args, **kwargs), language, produce_models)

@@ -1,6 +1,6 @@
 import random
 
-from stringfuzz.generator import generate
+from stringfuzz.generators.util import call_generate
 
 __all__ = [
     'random_ast'
@@ -11,5 +11,5 @@ def make_random_ast():
     return []
 
 # public API
-def random_ast(language, *args, **kwargs):
-    return generate(make_random_ast(*args, **kwargs), language)
+def random_ast(language, produce_models, *args, **kwargs):
+    return call_generate(make_random_ast(*args, **kwargs), language, produce_models)

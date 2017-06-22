@@ -13,8 +13,11 @@ __all__ = [
     'smt_int_lit',
     'smt_assert',
     'smt_equal',
+    'smt_gt',
+    'smt_lt',
     'smt_concat',
     'smt_at',
+    'smt_len',
     'smt_declare_var',
     'smt_declare_const',
     'smt_sat',
@@ -59,6 +62,12 @@ def smt_assert(exp):
 
 def smt_equal(a, b):
     return ExpressionNode('=', [a, b])
+
+def smt_gt(a, b):
+    return ExpressionNode('>', [a, b])
+
+def smt_lt(a, b):
+    return ExpressionNode('<', [a, b])
 
 def smt_concat(a, b):
     return ConcatNode(a, b)

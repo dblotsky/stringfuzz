@@ -10,15 +10,17 @@ import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
-from stringfuzz.generators import concats, random_text, random_ast, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
+from stringfuzz.generators import concats, lengths, random_text, random_ast, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 
 # constants
 CONCATS     = 'concats'
+LENGTHS     = 'lengths'
 RANDOM_TEXT = 'random-text'
 RANDOM_AST  = 'random-ast'
 
 GENERATORS = {
     CONCATS:     concats,
+    LENGTHS:     lengths,
     RANDOM_TEXT: random_text,
     RANDOM_AST:  random_ast
 }
@@ -26,7 +28,8 @@ GENERATORS = {
 DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
 
 # defaults
-DEFAULT_SEED = 0
+DEFAULT_SEED           = 0
+DEFAULT_PRODUCE_MODELS = False
 
 DEFAULT_LENGTH        = 10
 DEFAULT_DEPTH         = 5
@@ -36,11 +39,18 @@ DEFAULT_DEPTH_TYPE    = SYNTACTIC_DEPTH
 DEFAULT_EXTRACTED     = 0
 DEFAULT_EXTRACT_INDEX = 10
 
+DEFAULT_NUM_VARS    = 5
+DEFAULT_MIN_LEN     = 0
+DEFAULT_MAX_LEN     = 10
+DEFAULT_NUM_CONCATS = 0
+
 def main():
 
     # create arg parser
-    parser = argparse.ArgumentParser(description='SMTLIB 2.* problem generator.')
-    parser.add_argument(
+    global_parser = argparse.ArgumentParser(description='SMTLIB 2.* problem generator.')
+
+    # global args
+    global_parser.add_argument(
         '--language',
         '-l',
         dest    = 'language',
@@ -49,7 +59,7 @@ def main():
         default = SMT_25_STRING,
         help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
-    parser.add_argument(
+    global_parser.add_argument(
         '--seed',
         '-r',
         dest    = 'seed',
@@ -58,9 +68,17 @@ def main():
         default = DEFAULT_SEED,
         help    = 'seed for random number generator (default: {})'.format(DEFAULT_SEED)
     )
+    global_parser.add_argument(
+        '--models',
+        '-m',
+        dest    = 'produce_models',
+        action  = 'store_true',
+        default = DEFAULT_PRODUCE_MODELS,
+        help    = 'append the SMT 2.x command to produce a model (default: {})'.format(DEFAULT_PRODUCE_MODELS)
+    )
 
     # get subparsers
-    subparsers = parser.add_subparsers(dest='generator', help='generator choice')
+    subparsers = global_parser.add_subparsers(dest='generator', help='generator choice')
     subparsers.required = True
 
     # concats fuzzer
@@ -118,6 +136,45 @@ def main():
         help    = 'flag for balanced tree (default: {!r})'.format(DEFAULT_BALANCED)
     )
 
+    # lengths fuzzer
+    lengths_parser = subparsers.add_parser(LENGTHS, help='instance with length constraints')
+    lengths_parser.add_argument(
+        '--num-vars',
+        '-v',
+        dest    = 'num_vars',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_VARS,
+        help    = 'number of variables to create (default: {})'.format(DEFAULT_NUM_VARS)
+    )
+    lengths_parser.add_argument(
+        '--min-length',
+        '-n',
+        dest    = 'min_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MIN_LEN,
+        help    = 'lower bound on length (default: {})'.format(DEFAULT_MIN_LEN)
+    )
+    lengths_parser.add_argument(
+        '--max-length',
+        '-x',
+        dest    = 'max_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_LEN,
+        help    = 'upper bound on length (default: {})'.format(DEFAULT_MAX_LEN)
+    )
+    lengths_parser.add_argument(
+        '--num-concats',
+        '-c',
+        dest    = 'num_concats',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_CONCATS,
+        help    = 'number of (binary) concats to add (default: {})'.format(DEFAULT_NUM_CONCATS)
+    )
+
     # random text fuzzer
     random_parser = subparsers.add_parser(RANDOM_TEXT, help='totally random text')
     random_parser.add_argument(
@@ -134,7 +191,7 @@ def main():
     # random_ast_parser = subparsers.add_parser(RANDOM_AST, help='random but syntactically valid problem')
 
     # parse args
-    args = parser.parse_args()
+    args = global_parser.parse_args()
 
     # get the generator function based on args
     generator_name = args.generator
