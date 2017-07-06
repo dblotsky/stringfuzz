@@ -8,6 +8,11 @@ are three main tools:
 - `stringfuzzx` to transform existing problems
 - `stringstats` to measure properties of problems
 
+Installing
+==========
+
+    python3 setup.py install
+
 Running
 =======
 
@@ -22,11 +27,6 @@ If installed, they can be run from anywhere as follows:
     stringfuzzg --help
     stringfuzzx --help
     stringstats --help
-
-Installing
-==========
-
-    python3 setup.py install
 
 Examples
 ========
