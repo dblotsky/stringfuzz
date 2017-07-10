@@ -29,15 +29,17 @@ DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
 
 # defaults
 DEFAULT_SEED           = 0
+DEFAULT_RANDOM         = False
 DEFAULT_PRODUCE_MODELS = False
 
-DEFAULT_LENGTH        = 10
-DEFAULT_DEPTH         = 5
-DEFAULT_SOLUTION      = None
-DEFAULT_BALANCED      = False
-DEFAULT_DEPTH_TYPE    = SYNTACTIC_DEPTH
-DEFAULT_EXTRACTED     = 0
-DEFAULT_EXTRACT_INDEX = 10
+DEFAULT_LENGTH           = 10
+DEFAULT_DEPTH            = 5
+DEFAULT_SOLUTION         = None
+DEFAULT_BALANCED         = False
+DEFAULT_RANDOM_RELATIONS = False
+DEFAULT_DEPTH_TYPE       = SYNTACTIC_DEPTH
+DEFAULT_EXTRACTED        = 0
+DEFAULT_EXTRACT_INDEX    = 10
 
 DEFAULT_NUM_VARS    = 5
 DEFAULT_MIN_LEN     = 0
@@ -60,21 +62,30 @@ def main():
         help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
     global_parser.add_argument(
-        '--seed',
-        '-r',
-        dest    = 'seed',
-        metavar = 'S',
-        type    = int,
-        default = DEFAULT_SEED,
-        help    = 'seed for random number generator (default: {})'.format(DEFAULT_SEED)
-    )
-    global_parser.add_argument(
         '--models',
         '-m',
         dest    = 'produce_models',
         action  = 'store_true',
         default = DEFAULT_PRODUCE_MODELS,
         help    = 'append the SMT 2.x command to produce a model (default: {})'.format(DEFAULT_PRODUCE_MODELS)
+    )
+    seed_group = global_parser.add_mutually_exclusive_group()
+    seed_group.add_argument(
+        '--seed',
+        '-s',
+        dest    = 'seed',
+        metavar = 'S',
+        type    = int,
+        default = DEFAULT_SEED,
+        help    = 'seed for random number generator (default: {})'.format(DEFAULT_SEED)
+    )
+    seed_group.add_argument(
+        '--random',
+        '-r',
+        dest    = 'random',
+        action  = 'store_true',
+        default = DEFAULT_RANDOM,
+        help    = 'seed the random number generator with the current time (default: {})'.format(DEFAULT_RANDOM)
     )
 
     # get subparsers
@@ -174,6 +185,14 @@ def main():
         default = DEFAULT_NUM_CONCATS,
         help    = 'number of (binary) concats to add (default: {})'.format(DEFAULT_NUM_CONCATS)
     )
+    lengths_parser.add_argument(
+        '--random-relations',
+        '-r',
+        action  = 'store_true',
+        dest    = 'random_relations',
+        default = DEFAULT_RANDOM_RELATIONS,
+        help    = 'use constraints other than "=" (default: {!r})'.format(DEFAULT_RANDOM_RELATIONS)
+    )
 
     # random text fuzzer
     random_parser = subparsers.add_parser(RANDOM_TEXT, help='totally random text')
@@ -198,7 +217,10 @@ def main():
     generator      = GENERATORS[generator_name]
 
     # seed the RNG
-    random.seed(args.seed)
+    if args.random is True:
+        random.seed()
+    else:
+        random.seed(args.seed)
 
     # get args as a dict
     # NOTE:
@@ -209,6 +231,7 @@ def main():
     # pop arguments that shouldn't be passed on to the generator
     generator_args.pop('generator')
     generator_args.pop('seed')
+    generator_args.pop('random')
 
     # run the generator with the args
     print(generator(**generator_args))

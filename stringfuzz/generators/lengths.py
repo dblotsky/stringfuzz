@@ -21,7 +21,15 @@ def new_model(min_length, max_length):
 def set_equal(a, b):
     return smt_assert(smt_equal(a, b))
 
-def make_lengths(num_vars, min_length, max_length, num_concats):
+def make_lengths(num_vars, min_length, max_length, num_concats, random_relations):
+
+    # make list of possible relations to use in constraints
+    if random_relations is True:
+        def choose_relation():
+            return random.choice([smt_equal, smt_gt, smt_lt])
+    else:
+        def choose_relation():
+            return smt_equal
 
     # create variables
     variables = [smt_new_var() for i in range(num_vars)]
@@ -32,11 +40,22 @@ def make_lengths(num_vars, min_length, max_length, num_concats):
     # create length constraints
     expressions = []
     for v in variables:
-        expressions.append(set_equal(smt_int_lit(model[v].length), smt_len(v)))
+
+        # pick a relation
+        chosen_relation = choose_relation()
+
+        # build constraint
+        model_length  = smt_int_lit(model[v].length)
+        actual_length = smt_len(v)
+        constraint    = smt_assert(chosen_relation(model_length, actual_length))
+
+        # add constraint
+        expressions.append(constraint)
 
     # validate args
-    if num_concats > (num_vars / 2):
-        raise ValueError('can\'t add more concats than the number of variables divided by 2')
+    max_num_concats = num_vars // 2
+    if num_concats > max_num_concats:
+        raise ValueError('can\'t add more concats than the number of variables divided by 2 (that is, {})'.format(max_num_concats))
 
     # if concats are required, add them
     if num_concats > 0:
@@ -54,8 +73,16 @@ def make_lengths(num_vars, min_length, max_length, num_concats):
             concat     = smt_concat(a, b)
             sum_length = model[a].length + model[b].length
 
+            # pick a relation
+            chosen_relation = choose_relation()
+
+            # build constraint
+            sum_length_lit = smt_int_lit(sum_length)
+            actual_length  = smt_len(concat)
+            constraint     = smt_assert(chosen_relation(sum_length_lit, actual_length))
+
             # add constraint
-            expressions.append(set_equal(smt_int_lit(sum_length), smt_len(concat)))
+            expressions.append(constraint)
 
     # add sat-check
     expressions.append(smt_sat())
