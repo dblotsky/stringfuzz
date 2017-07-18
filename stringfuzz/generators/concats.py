@@ -6,6 +6,7 @@ from stringfuzz.smt import *
 
 __all__ = [
     'concats',
+    'concats_ast',
     'SYNTACTIC_DEPTH',
     'SEMANTIC_DEPTH',
 ]
@@ -149,5 +150,8 @@ def make_concats(depth, depth_type, solution, balanced, num_extracts, max_extrac
     return definitions + expressions
 
 # public API
+def concats_ast(*args, **kwargs):
+    return make_concats(*args, **kwargs)
+
 def concats(language, produce_models, *args, **kwargs):
-    return call_generate(make_concats(*args, **kwargs), language, produce_models)
+    return call_generate(concats_ast(*args, **kwargs), language, produce_models)

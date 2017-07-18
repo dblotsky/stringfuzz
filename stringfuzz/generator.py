@@ -105,7 +105,7 @@ def generate_expr(e, language):
     return '({})'.format(' '.join(components))
 
 # public API
-def generate_file(ast, path, language):
+def generate_file(ast, language, path):
     with open(path, 'r') as file:
         file.write(generate(ast, language))
 

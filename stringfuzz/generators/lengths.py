@@ -7,7 +7,8 @@ from stringfuzz.generators.util import call_generate
 from stringfuzz.smt import *
 
 __all__ = [
-    'lengths'
+    'lengths',
+    'lengths_ast'
 ]
 
 # data structures
@@ -93,5 +94,8 @@ def make_lengths(num_vars, min_length, max_length, num_concats, random_relations
     return declarations + expressions
 
 # public API
+def lengths_ast(*args, **kwargs):
+    return make_lengths(*args, **kwargs)
+
 def lengths(language, produce_models, *args, **kwargs):
-    return call_generate(make_lengths(*args, **kwargs), language, produce_models)
+    return call_generate(lengths_ast(*args, **kwargs), language, produce_models)
