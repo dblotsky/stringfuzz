@@ -93,4 +93,5 @@ def make_lengths(num_vars, min_length, max_length, num_concats, random_relations
 
 # public API
 def lengths(*args, **kwargs):
+    smt_reset_counters()
     return make_lengths(*args, **kwargs)

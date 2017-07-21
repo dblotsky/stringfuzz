@@ -149,4 +149,5 @@ def make_concats(depth, depth_type, solution, balanced, num_extracts, max_extrac
 
 # public API
 def concats(*args, **kwargs):
+    smt_reset_counters()
     return make_concats(*args, **kwargs)

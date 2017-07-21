@@ -22,6 +22,7 @@ __all__ = [
     'smt_declare_const',
     'smt_sat',
     'smt_model',
+    'smt_reset_counters',
 ]
 
 # constants
@@ -50,6 +51,12 @@ def smt_new_const():
     returned = const_counter
     const_counter += 1
     return smt_const(returned)
+
+def smt_reset_counters():
+    global const_counter
+    global var_counter
+    const_counter = 0
+    var_counter = 0
 
 def smt_str_lit(value):
     return StringLitNode(value)

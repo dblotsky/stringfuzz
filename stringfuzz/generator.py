@@ -106,7 +106,7 @@ def generate_expr(e, language):
 
 # public API
 def generate_file(ast, language, path):
-    with open(path, 'r') as file:
+    with open(path, 'w+') as file:
         file.write(generate(ast, language))
 
 def generate(ast, language):
