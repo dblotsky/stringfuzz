@@ -1,12 +1,10 @@
 import random
 
-from stringfuzz.generators.util import call_generate
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
 
 __all__ = [
     'concats',
-    'concats_ast',
     'SYNTACTIC_DEPTH',
     'SEMANTIC_DEPTH',
 ]
@@ -150,8 +148,5 @@ def make_concats(depth, depth_type, solution, balanced, num_extracts, max_extrac
     return definitions + expressions
 
 # public API
-def concats_ast(*args, **kwargs):
+def concats(*args, **kwargs):
     return make_concats(*args, **kwargs)
-
-def concats(language, produce_models, *args, **kwargs):
-    return call_generate(concats_ast(*args, **kwargs), language, produce_models)

@@ -14,5 +14,5 @@ def make_random_text(length):
     return ''.join(random.choice(ALL_CHARS) for i in range(length))
 
 # public API
-def random_text(language, produce_models, *args, **kwargs):
+def random_text(*args, **kwargs):
     return make_random_text(*args, **kwargs)

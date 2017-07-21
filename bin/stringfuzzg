@@ -10,6 +10,8 @@ import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
+from stringfuzz.generator import generate
+from stringfuzz.smt import smt_model
 from stringfuzz.generators import concats, lengths, random_text, random_ast, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 
 # constants
@@ -222,19 +224,39 @@ def main():
     else:
         random.seed(args.seed)
 
+    # get some flags that will get popped from args before they're used
+    produce_models = args.produce_models
+    language       = args.language
+
     # get args as a dict
     # NOTE:
     #      argparse's Namespace object (which 'args' is) returns itself as a
     #      dict when vars() is called on it
     generator_args = vars(args)
 
-    # pop arguments that shouldn't be passed on to the generator
+    # pop arguments that are specific to this script because
+    # they shouldn't be passed on to the generator
+    generator_args.pop('language')
+    generator_args.pop('produce_models')
     generator_args.pop('generator')
     generator_args.pop('seed')
     generator_args.pop('random')
 
     # run the generator with the args
-    print(generator(**generator_args))
+    generated = generator(**generator_args)
+
+    # the random text generator produces raw text
+    if (generator == random_text):
+        print(generated)
+
+    # other generators produce ASTs
+    else:
+
+        # add the model-getting node if needed
+        if produce_models is True:
+            generated.append(smt_model())
+
+        print(generate(generated, language))
 
 if __name__ == '__main__':
     main()
