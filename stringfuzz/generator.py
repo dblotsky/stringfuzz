@@ -22,6 +22,8 @@ def needs_encoding(c):
 def encode_char(c, language):
     if c == '"':
         return '""'
+    elif c == '\\':
+        return '\\\\'
     elif c in WHITESPACE:
         return repr(c)
     elif needs_encoding(c):
