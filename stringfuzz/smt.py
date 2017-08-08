@@ -89,7 +89,7 @@ def smt_declare_var(identifier):
     return ExpressionNode('declare-fun', [identifier, ArgsNode(), SortNode('String')])
 
 def smt_declare_const(identifier):
-    return ExpressionNode('declare-const', [identifier, ArgsNode(), SortNode('String')])
+    return ExpressionNode('declare-const', [identifier, SortNode('String')])
 
 def smt_sat():
     return ExpressionNode('check-sat', [])
