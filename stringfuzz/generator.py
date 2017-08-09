@@ -21,7 +21,10 @@ def needs_encoding(c):
 
 def encode_char(c, language):
     if c == '"':
-        return '""'
+        if language == SMT_25_STRING:
+            return '""'
+        else:
+            return '\\"'
     elif c == '\\':
         return '\\\\'
     elif c in WHITESPACE:
