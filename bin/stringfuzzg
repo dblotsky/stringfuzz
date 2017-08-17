@@ -50,8 +50,8 @@ DEFAULT_MIN_LEN     = 0
 DEFAULT_MAX_LEN     = 10
 DEFAULT_NUM_CONCATS = 0
 
-DEFAULT_NUM_OVERLAPPING = 5
-DEFAULT_LENGTH_OF_VARS  = 15
+DEFAULT_NUM_OVERLAPPING  = 2
+DEFAULT_LENGTH_OF_CONSTS = 5
 
 def main():
 
@@ -213,13 +213,13 @@ def main():
         help    = 'number of overlapping variables to generate (default: {})'.format(DEFAULT_NUM_OVERLAPPING)
     )
     overlaps_parser.add_argument(
-        '--length-of-vars',
-        '-v',
-        dest    = 'length_of_vars',
+        '--length-of-consts',
+        '-c',
+        dest    = 'length_of_consts',
         metavar = 'N',
         type    = int,
-        default = DEFAULT_LENGTH_OF_VARS,
-        help    = 'the length of the variable terms (default: {})'.format(DEFAULT_LENGTH_OF_VARS)
+        default = DEFAULT_LENGTH_OF_CONSTS,
+        help    = 'the length of the constant terms (default: {})'.format(DEFAULT_LENGTH_OF_CONSTS)
     )
 
     # random text fuzzer

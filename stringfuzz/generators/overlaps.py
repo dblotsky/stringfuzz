@@ -29,22 +29,22 @@ def chain_concats(length):
 
     return all_vars, concat
 
-def make_verlaps(num_vars, length_of_vars):
+def make_verlaps(num_vars, length_of_consts):
 
     # check args
-    num_middle_vars = num_vars - 2
-    if num_middle_vars < 1:
-        raise ValueError('the number of variables must be at least 3')
+    if num_vars < 1:
+        raise ValueError('the number of variables must be at least 1')
 
-    # create new variables
-    left                       = smt_new_var()
-    middle_vars, middle_concat = chain_concats(num_middle_vars)
-    right                      = smt_new_var()
-    variables                  = [left] + middle_vars + [right]
+    # create constants
+    left  = smt_str_lit(random_string(length_of_consts))
+    right = smt_str_lit(random_string(length_of_consts))
+
+    # create middle variables
+    variables, middle = chain_concats(num_vars)
 
     # create overlapping constraint
-    left_concat     = smt_concat(left, middle_concat)
-    right_concat    = smt_concat(middle_concat, right)
+    left_concat     = smt_concat(left, middle)
+    right_concat    = smt_concat(middle, right)
     concat_equality = smt_assert(smt_equal(left_concat, right_concat))
 
     # add constraint and sat-check
@@ -58,16 +58,7 @@ def make_verlaps(num_vars, length_of_vars):
     for v in variables:
         declarations.append(smt_declare_var(v))
 
-    # create length constraints
-    length_constraints = []
-    for v in variables:
-        length_constraint = smt_assert(smt_equal(
-            smt_len(v),
-            smt_int_lit(length_of_vars))
-        )
-        length_constraints.append(length_constraint)
-
-    return declarations + length_constraints + expressions
+    return declarations + expressions
 
 # public API
 def overlaps(*args, **kwargs):
