@@ -50,9 +50,8 @@ DEFAULT_MIN_LEN     = 0
 DEFAULT_MAX_LEN     = 10
 DEFAULT_NUM_CONCATS = 0
 
-DEFAULT_NUM_EQUALITIES = 1
-DEFAULT_LENGTH_OF_CONSTS = 7
-DEFAULT_LENGTH_OF_VARS = 5
+DEFAULT_NUM_OVERLAPPING = 5
+DEFAULT_LENGTH_OF_VARS  = 15
 
 def main():
 
@@ -205,22 +204,13 @@ def main():
     # overlaps fuzzer
     overlaps_parser = subparsers.add_parser(OVERLAPS, help='instance with overlapping variables')
     overlaps_parser.add_argument(
-        '--num-equalities',
+        '--num-vars',
         '-n',
-        dest    = 'num_equalities',
+        dest    = 'num_vars',
         metavar = 'N',
         type    = int,
-        default = DEFAULT_NUM_EQUALITIES,
-        help    = 'number of equalities to generate (default: {})'.format(DEFAULT_NUM_EQUALITIES)
-    )
-    overlaps_parser.add_argument(
-        '--length-of-consts',
-        '-c',
-        dest    = 'length_of_consts',
-        metavar = 'N',
-        type    = int,
-        default = DEFAULT_LENGTH_OF_CONSTS,
-        help    = 'the length of the constant terms (default: {})'.format(DEFAULT_LENGTH_OF_CONSTS)
+        default = DEFAULT_NUM_OVERLAPPING,
+        help    = 'number of overlapping variables to generate (default: {})'.format(DEFAULT_NUM_OVERLAPPING)
     )
     overlaps_parser.add_argument(
         '--length-of-vars',
