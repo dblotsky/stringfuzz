@@ -2,7 +2,7 @@
 
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name         = 'stringfuzz',
@@ -12,6 +12,6 @@ setup(
     author_email = 'dmitry.blotsky@gmail.com',
     url          = 'https://github.com/dblotsky/stringfuzz',
     scripts      = ['bin/stringfuzzx', 'bin/stringfuzzg', 'bin/stringstats'],
-    packages     = ['stringfuzz'],
+    packages     = find_packages(),
     package_dir  = {'stringfuzz': 'stringfuzz'},
 )
