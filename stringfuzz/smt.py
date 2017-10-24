@@ -23,6 +23,12 @@ __all__ = [
     'smt_sat',
     'smt_model',
     'smt_reset_counters',
+    'smt_str_to_re',
+    'smt_regex_in',
+    'smt_regex_concat',
+    'smt_and',
+    'smt_or',
+    'smt_not',
 ]
 
 # constants
@@ -67,6 +73,15 @@ def smt_int_lit(value):
 def smt_assert(exp):
     return ExpressionNode('assert', [exp])
 
+def smt_and(a, b):
+    return ExpressionNode('and', [a, b])
+
+def smt_or(a, b):
+    return ExpressionNode('or', [a, b])
+
+def smt_not(a):
+    return ExpressionNode('not', [a])
+
 def smt_equal(a, b):
     return ExpressionNode('=', [a, b])
 
@@ -84,6 +99,15 @@ def smt_at(s, i):
 
 def smt_len(a):
     return LengthNode(a)
+
+def smt_str_to_re(s):
+    return StrToReNode(s)
+
+def smt_regex_in(s, r):
+    return InReNode(s, r)
+
+def smt_regex_concat(a, b):
+    return ReConcatNode(a, b)
 
 def smt_declare_var(identifier):
     return ExpressionNode('declare-fun', [identifier, ArgsNode(), SortNode('String')])

@@ -100,6 +100,30 @@ def generate_expr(e, language):
         else:
             raise NotSupported(e, language)
 
+    elif isinstance(e, StrToReNode):
+        if language == SMT_20_STRING:
+            components.append('Str2Reg')
+        elif language == SMT_25_STRING:
+            components.append('str.to.re')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, InReNode):
+        if language == SMT_20_STRING:
+            components.append('RegexIn')
+        elif language == SMT_25_STRING:
+            components.append('str.in.re')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, ReConcatNode):
+        if language == SMT_20_STRING:
+            components.append('RegexConcat')
+        elif language == SMT_25_STRING:
+            components.append('re.++')
+        else:
+            raise NotSupported(e, language)
+
     # all other expressions
     else:
         components.append(e.symbol)

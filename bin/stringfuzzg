@@ -12,7 +12,7 @@ from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
 from stringfuzz.generator import generate
 from stringfuzz.smt import smt_model
-from stringfuzz.generators import concats, overlaps, lengths, random_text, random_ast, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
+from stringfuzz.generators import concats, overlaps, lengths, random_text, random_ast, regex_pair, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 
 # constants
 CONCATS     = 'concats'
@@ -20,13 +20,15 @@ LENGTHS     = 'lengths'
 OVERLAPS    = 'overlaps'
 RANDOM_TEXT = 'random-text'
 RANDOM_AST  = 'random-ast'
+REGEX_PAIR  = 'regex-pair'
 
 GENERATORS = {
     CONCATS:     concats,
     LENGTHS:     lengths,
     OVERLAPS:    overlaps,
     RANDOM_TEXT: random_text,
-    RANDOM_AST:  random_ast
+    RANDOM_AST:  random_ast,
+    REGEX_PAIR:  regex_pair,
 }
 
 DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
@@ -221,6 +223,9 @@ def main():
         default = DEFAULT_LENGTH_OF_CONSTS,
         help    = 'the length of the constant terms (default: {})'.format(DEFAULT_LENGTH_OF_CONSTS)
     )
+
+    # regex-pair fuzzer
+    regex_pair_parser = subparsers.add_parser(REGEX_PAIR, help='instance with two regexes')
 
     # random text fuzzer
     random_parser = subparsers.add_parser(RANDOM_TEXT, help='totally random text')

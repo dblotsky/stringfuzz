@@ -36,9 +36,12 @@ def make_int_lit(s, w):    return Token('INT_LIT', w)
 def make_sym(s, w):        return Token('SYMBOL', w)
 
 # specific symbol tokens
-def make_concat(s, w): return Token('CONCAT', w)
-def make_at(s, w):     return Token('AT', w)
-def make_length(s, w): return Token('LENGTH', w)
+def make_concat(s, w):    return Token('CONCAT', w)
+def make_at(s, w):        return Token('AT', w)
+def make_length(s, w):    return Token('LENGTH', w)
+def make_in_re(s, w):     return Token('IN_RE', w)
+def make_str_to_re(s, w): return Token('STR_TO_RE', w)
+def make_re_concat(s, w): return Token('RE_CONCAT', w)
 
 # constants
 ALPHABET   = string.digits + string.ascii_letters + string.punctuation
@@ -109,11 +112,11 @@ SMT_20_STRING_TOKENS = [
     (r'IndexOf',     make_sym),
     (r'Indexof',     make_sym),
     (r'Length',      make_length),
-    (r'RegexIn',     make_sym),
-    (r'RegexConcat', make_sym),
+    (r'RegexIn',     make_in_re),
+    (r'RegexConcat', make_re_concat),
     (r'Replace',     make_sym),
     (r'StartsWith',  make_sym),
-    (r'Str2Reg',     make_sym),
+    (r'Str2Reg',     make_str_to_re),
     (r'Substring',   make_sym),
 
     (r'"(?:\\\"|[^"])*"', make_string_lit),
@@ -128,7 +131,7 @@ SMT_25_STRING_TOKENS = [
     (r'str\.at',       make_at),
     (r'str\.contains', make_sym),
     (r'str\.from-int', make_sym),
-    (r'str\.in\.re',   make_sym),
+    (r'str\.in\.re',   make_in_re),
     (r'str\.indexof',  make_sym),
     (r'str\.len',      make_length),
     (r'str\.prefixof', make_sym),
@@ -136,10 +139,10 @@ SMT_25_STRING_TOKENS = [
     (r'str\.substr',   make_sym),
     (r'str\.suffixof', make_sym),
     (r'str\.to-int',   make_sym),
-    (r'str\.to\.re',   make_sym),
+    (r'str\.to\.re',   make_str_to_re),
     (r're\.\*',        make_sym),
     (r're\.\+',        make_sym),
-    (r're\.\+\+',      make_sym),
+    (r're\.\+\+',      make_re_concat),
     (r're\.range',     make_sym),
     (r're\.union',     make_sym),
 

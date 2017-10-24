@@ -18,6 +18,9 @@ __all__ = [
     'ConcatNode',
     'AtNode',
     'LengthNode',
+    'InReNode',
+    'StrToReNode',
+    'ReConcatNode',
 ]
 
 # data structures
@@ -100,3 +103,15 @@ class AtNode(SpecificExpression):
 class LengthNode(SpecificExpression):
     def __init__(self, a):
         super(LengthNode, self).__init__('Length', [a])
+
+class InReNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(InReNode, self).__init__('InRegex', [a, b])
+
+class StrToReNode(SpecificExpression):
+    def __init__(self, a):
+        super(StrToReNode, self).__init__('Str2Re', [a])
+
+class ReConcatNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(ReConcatNode, self).__init__('ReConcat', [a, b])

@@ -72,33 +72,38 @@ def get_expression(s):
 
     # special expression cases
     if s.accept('CONCAT'):
-
-        # get its two args
         a = get_arg(s)
         b = get_arg(s)
-
         s.expect('RPAREN')
-
         return ConcatNode(a, b)
 
     elif s.accept('AT'):
-
-        # get its two args
         a = get_arg(s)
         b = get_arg(s)
-
         s.expect('RPAREN')
-
         return AtNode(a, b)
 
     elif s.accept('LENGTH'):
-
-        # get its two args
         a = get_arg(s)
-
         s.expect('RPAREN')
-
         return LengthNode(a)
+
+    elif s.accept('IN_RE'):
+        a = get_arg(s)
+        b = get_arg(s)
+        s.expect('RPAREN')
+        return InReNode(a, b)
+
+    elif s.accept('STR_TO_RE'):
+        a = get_arg(s)
+        s.expect('RPAREN')
+        return StrToReNode(a)
+
+    elif s.accept('RE_CONCAT'):
+        a = get_arg(s)
+        b = get_arg(s)
+        s.expect('RPAREN')
+        return ReConcatNode(a, b)
 
     # expression case
     body   = []
