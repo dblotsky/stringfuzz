@@ -105,6 +105,11 @@ def get_expression(s):
         s.expect('RPAREN')
         return ReConcatNode(a, b)
 
+    elif s.accept('RE_STAR'):
+        a = get_arg(s)
+        s.expect('RPAREN')
+        return ReStarNode(a, b)
+
     # expression case
     body   = []
     symbol = s.expect('SYMBOL').value

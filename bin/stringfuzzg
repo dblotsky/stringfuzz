@@ -12,7 +12,13 @@ from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
 from stringfuzz.generator import generate
 from stringfuzz.smt import smt_model
-from stringfuzz.generators import concats, overlaps, lengths, random_text, random_ast, regex_pair, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
+
+from stringfuzz.generators import concats, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
+from stringfuzz.generators import overlaps
+from stringfuzz.generators import lengths
+from stringfuzz.generators import random_text
+from stringfuzz.generators import random_ast
+from stringfuzz.generators import regex_pair, INCREASING_REGEX, RANDOM_REGEX
 
 # constants
 CONCATS     = 'concats'
@@ -31,7 +37,8 @@ GENERATORS = {
     REGEX_PAIR:  regex_pair,
 }
 
-DEPTH_TYPES = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
+DEPTH_TYPES   = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
+LITERAL_TYPES = [INCREASING_REGEX, RANDOM_REGEX]
 
 # defaults
 DEFAULT_SEED           = 0
@@ -54,6 +61,10 @@ DEFAULT_NUM_CONCATS = 0
 
 DEFAULT_NUM_OVERLAPPING  = 2
 DEFAULT_LENGTH_OF_CONSTS = 5
+
+DEFAULT_LITERAL_TYPE = RANDOM_REGEX
+DEFAULT_NUM_TERMS    = 3
+DEFAULT_TERM_LENGTH  = 2
 
 def main():
 
@@ -226,6 +237,33 @@ def main():
 
     # regex-pair fuzzer
     regex_pair_parser = subparsers.add_parser(REGEX_PAIR, help='instance with two regexes')
+    regex_pair_parser.add_argument(
+        '--literal-type',
+        '-t',
+        dest    = 'literal_type',
+        type    = str,
+        choices = LITERAL_TYPES,
+        default = DEFAULT_LITERAL_TYPE,
+        help    = 'way to generate regex literals (default: {})'.format(DEFAULT_LITERAL_TYPE)
+    )
+    regex_pair_parser.add_argument(
+        '--num-terms',
+        '-n',
+        dest    = 'num_terms',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_TERMS,
+        help    = 'number of regex terms to join (default: {})'.format(DEFAULT_NUM_TERMS)
+    )
+    regex_pair_parser.add_argument(
+        '--term-length',
+        '-l',
+        dest    = 'term_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_TERM_LENGTH,
+        help    = 'lengths of regex terms (default: {})'.format(DEFAULT_TERM_LENGTH)
+    )
 
     # random text fuzzer
     random_parser = subparsers.add_parser(RANDOM_TEXT, help='totally random text')

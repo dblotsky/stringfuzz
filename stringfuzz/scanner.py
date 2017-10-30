@@ -42,6 +42,7 @@ def make_length(s, w):    return Token('LENGTH', w)
 def make_in_re(s, w):     return Token('IN_RE', w)
 def make_str_to_re(s, w): return Token('STR_TO_RE', w)
 def make_re_concat(s, w): return Token('RE_CONCAT', w)
+def make_re_star(s, w):   return Token('RE_STAR', w)
 
 # constants
 ALPHABET   = string.digits + string.ascii_letters + string.punctuation
@@ -113,6 +114,7 @@ SMT_20_STRING_TOKENS = [
     (r'Indexof',     make_sym),
     (r'Length',      make_length),
     (r'RegexIn',     make_in_re),
+    (r'RegexStar',   make_re_star),
     (r'RegexConcat', make_re_concat),
     (r'Replace',     make_sym),
     (r'StartsWith',  make_sym),
@@ -140,7 +142,7 @@ SMT_25_STRING_TOKENS = [
     (r'str\.suffixof', make_sym),
     (r'str\.to-int',   make_sym),
     (r'str\.to\.re',   make_str_to_re),
-    (r're\.\*',        make_sym),
+    (r're\.\*',        make_re_star),
     (r're\.\+',        make_sym),
     (r're\.\+\+',      make_re_concat),
     (r're\.range',     make_sym),

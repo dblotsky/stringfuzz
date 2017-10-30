@@ -26,6 +26,7 @@ __all__ = [
     'smt_str_to_re',
     'smt_regex_in',
     'smt_regex_concat',
+    'smt_regex_star',
     'smt_and',
     'smt_or',
     'smt_not',
@@ -108,6 +109,9 @@ def smt_regex_in(s, r):
 
 def smt_regex_concat(a, b):
     return ReConcatNode(a, b)
+
+def smt_regex_star(a):
+    return ReStarNode(a)
 
 def smt_declare_var(identifier):
     return ExpressionNode('declare-fun', [identifier, ArgsNode(), SortNode('String')])

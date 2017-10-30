@@ -124,6 +124,14 @@ def generate_expr(e, language):
         else:
             raise NotSupported(e, language)
 
+    elif isinstance(e, ReStarNode):
+        if language == SMT_20_STRING:
+            components.append('RegexStar')
+        elif language == SMT_25_STRING:
+            components.append('re.*')
+        else:
+            raise NotSupported(e, language)
+
     # all other expressions
     else:
         components.append(e.symbol)

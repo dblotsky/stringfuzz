@@ -21,6 +21,7 @@ __all__ = [
     'InReNode',
     'StrToReNode',
     'ReConcatNode',
+    'ReStarNode',
 ]
 
 # data structures
@@ -115,3 +116,7 @@ class StrToReNode(SpecificExpression):
 class ReConcatNode(SpecificExpression):
     def __init__(self, a, b):
         super(ReConcatNode, self).__init__('ReConcat', [a, b])
+
+class ReStarNode(SpecificExpression):
+    def __init__(self, a):
+        super(ReStarNode, self).__init__('ReStar', [a])
