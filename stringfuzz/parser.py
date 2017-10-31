@@ -108,7 +108,7 @@ def get_expression(s):
     elif s.accept('RE_STAR'):
         a = get_arg(s)
         s.expect('RPAREN')
-        return ReStarNode(a, b)
+        return ReStarNode(a)
 
     # expression case
     body   = []
