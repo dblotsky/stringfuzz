@@ -110,6 +110,17 @@ def get_expression(s):
         s.expect('RPAREN')
         return ReStarNode(a)
 
+    elif s.accept('RE_PLUS'):
+        a = get_arg(s)
+        s.expect('RPAREN')
+        return RePlusNode(a)
+
+    elif s.accept('RE_UNION'):
+        a = get_arg(s)
+        b = get_arg(s)
+        s.expect('RPAREN')
+        return ReUnionNode(a, b)
+
     # expression case
     body   = []
     symbol = s.expect('SYMBOL').value

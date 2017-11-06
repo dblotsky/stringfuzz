@@ -132,6 +132,22 @@ def generate_expr(e, language):
         else:
             raise NotSupported(e, language)
 
+    elif isinstance(e, RePlusNode):
+        if language == SMT_20_STRING:
+            components.append('RegexPlus')
+        elif language == SMT_25_STRING:
+            components.append('re.+')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, ReUnionNode):
+        if language == SMT_20_STRING:
+            components.append('RegexUnion')
+        elif language == SMT_25_STRING:
+            components.append('re.union')
+        else:
+            raise NotSupported(e, language)
+
     # all other expressions
     else:
         components.append(e.symbol)

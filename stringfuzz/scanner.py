@@ -43,6 +43,8 @@ def make_in_re(s, w):     return Token('IN_RE', w)
 def make_str_to_re(s, w): return Token('STR_TO_RE', w)
 def make_re_concat(s, w): return Token('RE_CONCAT', w)
 def make_re_star(s, w):   return Token('RE_STAR', w)
+def make_re_plus(s, w):   return Token('RE_PLUS', w)
+def make_re_union(s, w):  return Token('RE_UNION', w)
 
 # constants
 ALPHABET   = string.digits + string.ascii_letters + string.punctuation
@@ -115,7 +117,9 @@ SMT_20_STRING_TOKENS = [
     (r'Length',      make_length),
     (r'RegexIn',     make_in_re),
     (r'RegexStar',   make_re_star),
+    (r'RegexPlus',   make_re_plus),
     (r'RegexConcat', make_re_concat),
+    (r'RegexUnion',  make_re_union),
     (r'Replace',     make_sym),
     (r'StartsWith',  make_sym),
     (r'Str2Reg',     make_str_to_re),
@@ -143,10 +147,10 @@ SMT_25_STRING_TOKENS = [
     (r'str\.to-int',   make_sym),
     (r'str\.to\.re',   make_str_to_re),
     (r're\.\*',        make_re_star),
-    (r're\.\+',        make_sym),
+    (r're\.\+',        make_re_plus),
     (r're\.\+\+',      make_re_concat),
     (r're\.range',     make_sym),
-    (r're\.union',     make_sym),
+    (r're\.union',     make_re_union),
 
     (r'"(?:""|[^"])*"', make_string_lit),
 ]

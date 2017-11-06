@@ -18,7 +18,7 @@ from stringfuzz.generators import overlaps
 from stringfuzz.generators import lengths
 from stringfuzz.generators import random_text
 from stringfuzz.generators import random_ast
-from stringfuzz.generators import regex_pair, INCREASING_REGEX, RANDOM_REGEX
+from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM
 
 # constants
 CONCATS     = 'concats'
@@ -26,7 +26,7 @@ LENGTHS     = 'lengths'
 OVERLAPS    = 'overlaps'
 RANDOM_TEXT = 'random-text'
 RANDOM_AST  = 'random-ast'
-REGEX_PAIR  = 'regex-pair'
+REGEX       = 'regex'
 
 GENERATORS = {
     CONCATS:     concats,
@@ -34,11 +34,12 @@ GENERATORS = {
     OVERLAPS:    overlaps,
     RANDOM_TEXT: random_text,
     RANDOM_AST:  random_ast,
-    REGEX_PAIR:  regex_pair,
+    REGEX:       regex,
 }
 
-DEPTH_TYPES   = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
-LITERAL_TYPES = [INCREASING_REGEX, RANDOM_REGEX]
+DEPTH_TYPES      = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
+LITERAL_TYPES    = [INCREASING_LITERALS, RANDOM_LITERALS]
+MEMBERSHIP_TYPES = [MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM]
 
 # defaults
 DEFAULT_SEED           = 0
@@ -62,9 +63,16 @@ DEFAULT_NUM_CONCATS = 0
 DEFAULT_NUM_OVERLAPPING  = 2
 DEFAULT_LENGTH_OF_CONSTS = 5
 
-DEFAULT_LITERAL_TYPE = RANDOM_REGEX
-DEFAULT_NUM_TERMS    = 3
-DEFAULT_TERM_LENGTH  = 2
+DEFAULT_LITERAL_TYPE    = RANDOM_LITERALS
+DEFAULT_MEMBERSHIP_TYPE = MEMBER_IN
+DEFAULT_REGEX_COINCIDE  = False
+DEFAULT_NUM_TERMS       = 3
+DEFAULT_NUM_REGEXES     = 1
+DEFAULT_REGEX_LIT_MIN   = 1
+DEFAULT_REGEX_LIT_MAX   = 3
+DEFAULT_TERM_DEPTH      = 0
+DEFAULT_REGEX_VAR_MIN   = None
+DEFAULT_REGEX_VAR_MAX   = None
 
 def main():
 
@@ -236,33 +244,95 @@ def main():
     )
 
     # regex-pair fuzzer
-    regex_pair_parser = subparsers.add_parser(REGEX_PAIR, help='instance with two regexes')
-    regex_pair_parser.add_argument(
+    regex_parser = subparsers.add_parser(REGEX, help='instance testing one variable for regex membership')
+    regex_parser.add_argument(
         '--literal-type',
-        '-t',
+        '-a',
         dest    = 'literal_type',
         type    = str,
         choices = LITERAL_TYPES,
         default = DEFAULT_LITERAL_TYPE,
         help    = 'way to generate regex literals (default: {})'.format(DEFAULT_LITERAL_TYPE)
     )
-    regex_pair_parser.add_argument(
+    regex_parser.add_argument(
+        '--coincide',
+        '-c',
+        dest    = 'reset_alphabet',
+        action  = 'store_true',
+        default = DEFAULT_REGEX_COINCIDE,
+        help    = 'try to make the regexes share alphabets (default: {})'.format(DEFAULT_REGEX_COINCIDE)
+    )
+    regex_parser.add_argument(
+        '--membership-type',
+        '-i',
+        dest    = 'membership_type',
+        type    = str,
+        choices = MEMBERSHIP_TYPES,
+        default = DEFAULT_MEMBERSHIP_TYPE,
+        help    = 'way to test regex membership (default: {})'.format(DEFAULT_MEMBERSHIP_TYPE)
+    )
+    regex_parser.add_argument(
         '--num-terms',
-        '-n',
+        '-t',
         dest    = 'num_terms',
         metavar = 'N',
         type    = int,
         default = DEFAULT_NUM_TERMS,
-        help    = 'number of regex terms to join (default: {})'.format(DEFAULT_NUM_TERMS)
+        help    = 'number of terms in each regex (default: {})'.format(DEFAULT_NUM_TERMS)
     )
-    regex_pair_parser.add_argument(
-        '--term-length',
-        '-l',
-        dest    = 'term_length',
+    regex_parser.add_argument(
+        '--lit-min',
+        '-m',
+        dest    = 'literal_min',
         metavar = 'N',
         type    = int,
-        default = DEFAULT_TERM_LENGTH,
-        help    = 'lengths of regex terms (default: {})'.format(DEFAULT_TERM_LENGTH)
+        default = DEFAULT_REGEX_LIT_MIN,
+        help    = 'min length of regex terms (default: {})'.format(DEFAULT_REGEX_LIT_MIN)
+    )
+    regex_parser.add_argument(
+        '--lit-max',
+        '-x',
+        dest    = 'literal_max',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_REGEX_LIT_MAX,
+        help    = 'max length of regex terms (default: {})'.format(DEFAULT_REGEX_LIT_MAX)
+    )
+    regex_parser.add_argument(
+        '--depth',
+        '-d',
+        dest    = 'term_depth',
+        metavar = 'D',
+        type    = int,
+        default = DEFAULT_TERM_DEPTH,
+        help    = 'depth of terms (default: {})'.format(DEFAULT_TERM_DEPTH)
+    )
+    regex_parser.add_argument(
+        '--num-regexes',
+        '-r',
+        dest    = 'num_regexes',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_REGEXES,
+        help    = 'number of regexes to test (default: {})'.format(DEFAULT_NUM_REGEXES)
+    )
+    regex_parser.add_argument(
+        '--var-min',
+        '-M',
+        dest    = 'min_var_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_REGEX_VAR_MIN,
+        help    = 'min length of the variable (default: {})'.format(DEFAULT_REGEX_VAR_MIN)
+    )
+    regex_parser.add_argument(
+        '--var-max',
+        '-X',
+        dest    = 'max_var_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_REGEX_VAR_MAX,
+        help    = 'max length of the variable (default: {})'.format(DEFAULT_REGEX_VAR_MAX)
     )
 
     # random text fuzzer

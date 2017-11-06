@@ -15,6 +15,8 @@ __all__ = [
     'smt_equal',
     'smt_gt',
     'smt_lt',
+    'smt_gte',
+    'smt_lte',
     'smt_concat',
     'smt_at',
     'smt_len',
@@ -27,6 +29,8 @@ __all__ = [
     'smt_regex_in',
     'smt_regex_concat',
     'smt_regex_star',
+    'smt_regex_plus',
+    'smt_regex_union',
     'smt_and',
     'smt_or',
     'smt_not',
@@ -92,6 +96,12 @@ def smt_gt(a, b):
 def smt_lt(a, b):
     return ExpressionNode('<', [a, b])
 
+def smt_gte(a, b):
+    return ExpressionNode('>=', [a, b])
+
+def smt_lte(a, b):
+    return ExpressionNode('<=', [a, b])
+
 def smt_concat(a, b):
     return ConcatNode(a, b)
 
@@ -110,8 +120,14 @@ def smt_regex_in(s, r):
 def smt_regex_concat(a, b):
     return ReConcatNode(a, b)
 
+def smt_regex_plus(a):
+    return RePlusNode(a)
+
 def smt_regex_star(a):
     return ReStarNode(a)
+
+def smt_regex_union(a, b):
+    return ReUnionNode(a, b)
 
 def smt_declare_var(identifier):
     return ExpressionNode('declare-fun', [identifier, ArgsNode(), SortNode('String')])
