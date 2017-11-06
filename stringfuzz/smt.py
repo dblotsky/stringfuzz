@@ -30,6 +30,7 @@ __all__ = [
     'smt_regex_concat',
     'smt_regex_star',
     'smt_regex_plus',
+    'smt_regex_range',
     'smt_regex_union',
     'smt_and',
     'smt_or',
@@ -122,6 +123,9 @@ def smt_regex_concat(a, b):
 
 def smt_regex_plus(a):
     return RePlusNode(a)
+
+def smt_regex_range(a, b):
+    return ReRangeNode(a, b)
 
 def smt_regex_star(a):
     return ReStarNode(a)

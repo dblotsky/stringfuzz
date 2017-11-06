@@ -55,6 +55,12 @@ def generate_node(node, language):
     elif isinstance(node, ArgsNode):
         return '()'
 
+    elif isinstance(node, ReAllCharNode):
+        if language == SMT_25_STRING:
+            return 're.allchar'
+        else:
+            raise NotSupported(node, language)
+
     # error out on all others
     else:
         raise NotImplementedError('no generator for {}'.format(type(node)))
@@ -81,6 +87,14 @@ def generate_expr(e, language):
             components.append('Concat')
         elif language == SMT_25_STRING:
             components.append('str.++')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, ContainsNode):
+        if language == SMT_20_STRING:
+            components.append('Contains')
+        elif language == SMT_25_STRING:
+            components.append('str.contains')
         else:
             raise NotSupported(e, language)
 
@@ -137,6 +151,14 @@ def generate_expr(e, language):
             components.append('RegexPlus')
         elif language == SMT_25_STRING:
             components.append('re.+')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, ReRangeNode):
+        if language == SMT_20_STRING:
+            components.append('RegexRange')
+        elif language == SMT_25_STRING:
+            components.append('re.range')
         else:
             raise NotSupported(e, language)
 

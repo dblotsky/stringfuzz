@@ -54,6 +54,8 @@ def get_arg(s):
         return StringLitNode(arg.value)
 
     # others
+    elif s.accept('RE_ALLCHAR'):
+        return ReAllCharNode()
     elif s.accept('IDENTIFIER'):
         return IdentifierNode(arg.value)
     elif s.accept('SORT'):
@@ -64,6 +66,14 @@ def get_arg(s):
     else:
         return None
 
+def expect_arg(s):
+    result = get_arg(s)
+
+    if result is None:
+        raise IndexError('expected an argument, got {!r}'.format(s.peek()))
+
+    return result
+
 def get_expression(s):
 
     # empty parens case
@@ -72,52 +82,58 @@ def get_expression(s):
 
     # special expression cases
     if s.accept('CONCAT'):
-        a = get_arg(s)
-        b = get_arg(s)
+        a = expect_arg(s)
+        b = expect_arg(s)
         s.expect('RPAREN')
         return ConcatNode(a, b)
 
     elif s.accept('AT'):
-        a = get_arg(s)
-        b = get_arg(s)
+        a = expect_arg(s)
+        b = expect_arg(s)
         s.expect('RPAREN')
         return AtNode(a, b)
 
     elif s.accept('LENGTH'):
-        a = get_arg(s)
+        a = expect_arg(s)
         s.expect('RPAREN')
         return LengthNode(a)
 
     elif s.accept('IN_RE'):
-        a = get_arg(s)
-        b = get_arg(s)
+        a = expect_arg(s)
+        b = expect_arg(s)
         s.expect('RPAREN')
         return InReNode(a, b)
 
     elif s.accept('STR_TO_RE'):
-        a = get_arg(s)
+        a = expect_arg(s)
         s.expect('RPAREN')
         return StrToReNode(a)
 
     elif s.accept('RE_CONCAT'):
-        a = get_arg(s)
-        b = get_arg(s)
+        a = expect_arg(s)
+        b = expect_arg(s)
         s.expect('RPAREN')
         return ReConcatNode(a, b)
 
     elif s.accept('RE_STAR'):
-        a = get_arg(s)
+        a = expect_arg(s)
         s.expect('RPAREN')
         return ReStarNode(a)
 
     elif s.accept('RE_PLUS'):
-        a = get_arg(s)
+        a = expect_arg(s)
         s.expect('RPAREN')
         return RePlusNode(a)
 
+    elif s.accept('RE_RANGE'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        s.expect('RPAREN')
+        return ReRangeNode(a, b)
+
     elif s.accept('RE_UNION'):
-        a = get_arg(s)
-        b = get_arg(s)
+        a = expect_arg(s)
+        b = expect_arg(s)
         s.expect('RPAREN')
         return ReUnionNode(a, b)
 

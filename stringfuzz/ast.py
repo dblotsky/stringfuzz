@@ -16,6 +16,7 @@ __all__ = [
     'ArgsNode',
     'ExpressionNode',
     'ConcatNode',
+    'ContainsNode',
     'AtNode',
     'LengthNode',
     'InReNode',
@@ -23,7 +24,9 @@ __all__ = [
     'ReConcatNode',
     'ReStarNode',
     'RePlusNode',
+    'ReRangeNode',
     'ReUnionNode',
+    'ReAllCharNode',
 ]
 
 # data structures
@@ -77,6 +80,10 @@ class ArgsNode(ASTNode):
     def __repr__(self):
         return 'Args<()>'
 
+class ReAllCharNode(ASTNode):
+    def __repr__(self):
+        return 'ReAllChar<.>'
+
 class ExpressionNode(ASTNode):
     def __init__(self, symbol, body):
         assert symbol is not None
@@ -98,6 +105,10 @@ class SpecificExpression(ExpressionNode):
 class ConcatNode(SpecificExpression):
     def __init__(self, a, b):
         super(ConcatNode, self).__init__('Concat', [a, b])
+
+class ContainsNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(ContainsNode, self).__init__('Contains', [a, b])
 
 class AtNode(SpecificExpression):
     def __init__(self, a, b):
@@ -126,6 +137,10 @@ class ReStarNode(SpecificExpression):
 class RePlusNode(SpecificExpression):
     def __init__(self, a):
         super(RePlusNode, self).__init__('RePlus', [a])
+
+class ReRangeNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(ReRangeNode, self).__init__('ReRange', [a, b])
 
 class ReUnionNode(SpecificExpression):
     def __init__(self, a, b):
