@@ -156,7 +156,7 @@ def generate_expr(e, language):
 
     elif isinstance(e, ReRangeNode):
         if language == SMT_20_STRING:
-            components.append('RegexRange')
+            components.append('RegexCharRange')
         elif language == SMT_25_STRING:
             components.append('re.range')
         else:

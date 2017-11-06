@@ -55,14 +55,18 @@ WHITESPACE = string.whitespace
 
 # token lists
 SMT_20_TOKENS = [
+
+    # sorts
     (r'Int',  make_sort),
     (r'Bool', make_sort),
 
+    # Boolean functions
     (r'ite', make_sym),
     (r'not', make_sym),
     (r'and', make_sym),
     (r'or',  make_sym),
 
+    # commands
     (r'set-logic',        make_sym),
     (r'set-option',       make_sym),
     (r'set-info',         make_sym),
@@ -88,6 +92,7 @@ SMT_20_TOKENS = [
     (r'get-info',         make_sym),
     (r'exit',             make_sym),
 
+    # math operators
     (r'\+',  make_sym),
     (r'-',   make_sym),
     (r'\*',  make_sym),
@@ -98,37 +103,44 @@ SMT_20_TOKENS = [
     (r'>',   make_sym),
     (r'div', make_sym),
 
-    (r'\s+',           make_whitespace),
-    (r'\n?\s*;[^\n]*', make_whitespace),
+    # whitespace
+    (r'\s+', make_whitespace),
 
-    (r'\(',       make_lparen),
-    (r'\)',       make_rparen),
+    # parens
+    (r'\(', make_lparen),
+    (r'\)', make_rparen),
+
+    # symbols
     (r'[\w\d_]+', make_identifier),
     (r'true',     make_bool_lit),
     (r'false',    make_bool_lit),
     (r'\d+',      make_int_lit),
     (r':[\w_-]+', make_setting),
+
+    # comments
+    (r';[^\n]*', make_whitespace),
 ]
 
 SMT_20_STRING_TOKENS = [
     (r'String', make_sort),
 
-    (r'CharAt',      make_at),
-    (r'Concat',      make_concat),
-    (r'Contains',    make_contains),
-    (r'EndsWith',    make_sym),
-    (r'IndexOf',     make_sym),
-    (r'Indexof',     make_sym),
-    (r'Length',      make_length),
-    (r'RegexIn',     make_in_re),
-    (r'RegexStar',   make_re_star),
-    (r'RegexPlus',   make_re_plus),
-    (r'RegexConcat', make_re_concat),
-    (r'RegexUnion',  make_re_union),
-    (r'Replace',     make_sym),
-    (r'StartsWith',  make_sym),
-    (r'Str2Reg',     make_str_to_re),
-    (r'Substring',   make_sym),
+    (r'Concat',         make_concat),
+    (r'CharAt',         make_at),
+    (r'Contains',       make_contains),
+    (r'Length',         make_length),
+    (r'IndexOf',        make_sym),
+    (r'Indexof',        make_sym),
+    (r'StartsWith',     make_sym),
+    (r'EndsWith',       make_sym),
+    (r'Replace',        make_sym),
+    (r'Substring',      make_sym),
+    (r'Str2Reg',        make_str_to_re),
+    (r'RegexIn',        make_in_re),
+    (r'RegexStar',      make_re_star),
+    (r'RegexConcat',    make_re_concat),
+    (r'RegexPlus',      make_re_plus),
+    (r'RegexCharRange', make_re_range),
+    (r'RegexUnion',     make_re_union),
 
     (r'"(?:\\.|[^\\"])*"', make_string_lit),
 ]
@@ -136,21 +148,19 @@ SMT_20_STRING_TOKENS = [
 SMT_25_STRING_TOKENS = [
     (r'String', make_sort),
 
-    (r'str\.to-int',   make_sym),
-    (r'str\.from-int', make_sym),
     (r'str\.\+\+',     make_concat),
     (r'str\.at',       make_at),
     (r'str\.contains', make_contains),
-    (r'str\.from-int', make_sym),
-    (r'str\.in\.re',   make_in_re),
-    (r'str\.indexof',  make_sym),
     (r'str\.len',      make_length),
+    (r'str\.indexof',  make_sym),
     (r'str\.prefixof', make_sym),
+    (r'str\.suffixof', make_sym),
     (r'str\.replace',  make_sym),
     (r'str\.substr',   make_sym),
-    (r'str\.suffixof', make_sym),
+    (r'str\.from-int', make_sym),
     (r'str\.to-int',   make_sym),
     (r'str\.to\.re',   make_str_to_re),
+    (r'str\.in\.re',   make_in_re),
     (r're\.\*',        make_re_star),
     (r're\.\+\+',      make_re_concat),
     (r're\.\+',        make_re_plus),
