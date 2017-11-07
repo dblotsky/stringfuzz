@@ -23,7 +23,7 @@ LITERAL_TYPES = [
 ]
 
 MEMBER_IN          = 'in'
-MEMBER_NOT_IN      = 'not in'
+MEMBER_NOT_IN      = 'not-in'
 MEMBER_ALTERNATING = 'alternating'
 MEMBER_RANDOM      = 'random'
 
@@ -192,7 +192,7 @@ def make_regex(
     _cursor                = 0
     _literal_type          = literal_type
     _configured_membership = membership_type
-    _current_membership    = MEMBER_NOT_IN
+    _current_membership    = _configured_membership
     _literal_min           = literal_min
     _literal_max           = literal_max
 
