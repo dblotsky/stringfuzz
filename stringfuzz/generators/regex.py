@@ -117,25 +117,25 @@ def toggle_membership_type(t):
     return MEMBER_IN
 
 def make_constraint(variable, r):
-    global _membership_type
-    global _current_membership_type
+    global _configured_membership
+    global _current_membership
 
     # if random, set the membership type randomly
-    if _membership_type == MEMBER_RANDOM:
+    if _configured_membership == MEMBER_RANDOM:
         if coin_toss():
-            _membership_type = MEMBER_IN
+            _current_membership = MEMBER_IN
         else:
-            _membership_type = MEMBER_NOT_IN
+            _current_membership = MEMBER_NOT_IN
 
     # if toggle, toggle membership type
-    elif _membership_type == MEMBER_ALTERNATING:
-        _current_membership_type = toggle_membership_type(_current_membership_type)
+    elif _configured_membership == MEMBER_ALTERNATING:
+        _current_membership = toggle_membership_type(_current_membership)
 
     # create constraint
     constraint = smt_regex_in(variable, r)
 
     # negate it if required
-    if _membership_type == MEMBER_NOT_IN:
+    if _current_membership == MEMBER_NOT_IN:
         constraint = smt_not(constraint)
 
     return constraint
@@ -184,17 +184,17 @@ def make_regex(
     # set globals
     global _cursor
     global _literal_type
-    global _membership_type
-    global _current_membership_type
+    global _configured_membership
+    global _current_membership
     global _literal_min
     global _literal_max
 
-    _cursor                  = 0
-    _literal_type            = literal_type
-    _membership_type         = membership_type
-    _current_membership_type = MEMBER_NOT_IN
-    _literal_min             = literal_min
-    _literal_max             = literal_max
+    _cursor                = 0
+    _literal_type          = literal_type
+    _configured_membership = membership_type
+    _current_membership    = MEMBER_NOT_IN
+    _literal_min           = literal_min
+    _literal_max           = literal_max
 
     # create variable
     matched = smt_new_var()
