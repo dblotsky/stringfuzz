@@ -127,6 +127,7 @@ SMT_20_TOKENS = [
 
     # comments
     (r';[^\n]*', make_whitespace),
+    (r'//[^\n]*', make_whitespace),
 ]
 
 SMT_20_STRING_TOKENS = [
