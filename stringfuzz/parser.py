@@ -87,6 +87,12 @@ def get_expression(s):
         s.expect('RPAREN')
         return ConcatNode(a, b)
 
+    elif s.accept('CONTAINS'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        s.expect('RPAREN')
+        return ContainsNode(a, b)
+
     elif s.accept('AT'):
         a = expect_arg(s)
         b = expect_arg(s)
@@ -97,6 +103,55 @@ def get_expression(s):
         a = expect_arg(s)
         s.expect('RPAREN')
         return LengthNode(a)
+
+    elif s.accept('INDEXOF'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        s.expect('RPAREN')
+        return IndexOfNode(a, b)
+
+    elif s.accept('INDEXOF2'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        c = expect_arg(s)
+        s.expect('RPAREN')
+        return IndexOf2Node(a, b, c)
+
+    elif s.accept('PREFIXOF'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        s.expect('RPAREN')
+        return PrefixOfNode(a, b)
+
+    elif s.accept('SUFFIXOF'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        s.expect('RPAREN')
+        return SuffixOfNode(a, b)
+
+    elif s.accept('REPLACE'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        c = expect_arg(s)
+        s.expect('RPAREN')
+        return StringReplaceNode(a, b, c)
+
+    elif s.accept('SUBSTRING'):
+        a = expect_arg(s)
+        b = expect_arg(s)
+        c = expect_arg(s)
+        s.expect('RPAREN')
+        return SubstringNode(a, b, c)
+
+    elif s.accept('FROM_INT'):
+        a = expect_arg(s)
+        s.expect('RPAREN')
+        return FromIntNode(a)
+
+    elif s.accept('TO_INT'):
+        a = expect_arg(s)
+        s.expect('RPAREN')
+        return ToIntNode(a)
 
     elif s.accept('IN_RE'):
         a = expect_arg(s)

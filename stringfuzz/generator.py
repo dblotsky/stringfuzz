@@ -114,6 +114,64 @@ def generate_expr(e, language):
         else:
             raise NotSupported(e, language)
 
+    elif isinstance(e, IndexOfNode):
+        if language == SMT_20_STRING:
+            components.append('IndexOf')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, IndexOf2Node):
+        if language == SMT_20_STRING:
+            components.append('IndexOf2')
+        elif language == SMT_25_STRING:
+            components.append('str.indexof')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, PrefixOfNode):
+        if language == SMT_20_STRING:
+            components.append('StartsWith')
+        elif language == SMT_25_STRING:
+            components.append('str.prefixof')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, SuffixOfNode):
+        if language == SMT_20_STRING:
+            components.append('EndsWith')
+        elif language == SMT_25_STRING:
+            components.append('str.suffixof')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, StringReplaceNode):
+        if language == SMT_20_STRING:
+            components.append('Replace')
+        elif language == SMT_25_STRING:
+            components.append('str.replace')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, SubstringNode):
+        if language == SMT_20_STRING:
+            components.append('Substring')
+        elif language == SMT_25_STRING:
+            components.append('str.substr')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, FromIntNode):
+        if language == SMT_25_STRING:
+            components.append('str.from-int')
+        else:
+            raise NotSupported(e, language)
+
+    elif isinstance(e, ToIntNode):
+        if language == SMT_25_STRING:
+            components.append('str.to-int')
+        else:
+            raise NotSupported(e, language)
+
     elif isinstance(e, StrToReNode):
         if language == SMT_20_STRING:
             components.append('Str2Reg')

@@ -36,18 +36,26 @@ def make_int_lit(s, w):    return Token('INT_LIT', w)
 def make_sym(s, w):        return Token('SYMBOL', w)
 
 # specific symbol tokens
-def make_contains(s, w):   return Token('CONTAINS', w)
-def make_concat(s, w):     return Token('CONCAT', w)
-def make_at(s, w):         return Token('AT', w)
-def make_length(s, w):     return Token('LENGTH', w)
-def make_in_re(s, w):      return Token('IN_RE', w)
-def make_str_to_re(s, w):  return Token('STR_TO_RE', w)
-def make_re_allchar(s, w): return Token('RE_ALLCHAR', w)
-def make_re_concat(s, w):  return Token('RE_CONCAT', w)
-def make_re_star(s, w):    return Token('RE_STAR', w)
-def make_re_plus(s, w):    return Token('RE_PLUS', w)
-def make_re_range(s, w):   return Token('RE_RANGE', w)
-def make_re_union(s, w):   return Token('RE_UNION', w)
+def make_contains(s, w):     return Token('CONTAINS', w)
+def make_concat(s, w):       return Token('CONCAT', w)
+def make_at(s, w):           return Token('AT', w)
+def make_indexof(s, w):      return Token('INDEXOF', w)
+def make_indexof2(s, w):     return Token('INDEXOF2', w)
+def make_prefixof(s, w):     return Token('PREFIXOF', w)
+def make_suffixof(s, w):     return Token('SUFFIXOF', w)
+def make_replace(s, w):      return Token('REPLACE', w)
+def make_substring(s, w):    return Token('SUBSTRING', w)
+def make_str_from_int(s, w): return Token('FROM_INT', w)
+def make_str_to_int(s, w):   return Token('TO_INT', w)
+def make_length(s, w):       return Token('LENGTH', w)
+def make_in_re(s, w):        return Token('IN_RE', w)
+def make_str_to_re(s, w):    return Token('STR_TO_RE', w)
+def make_re_allchar(s, w):   return Token('RE_ALLCHAR', w)
+def make_re_concat(s, w):    return Token('RE_CONCAT', w)
+def make_re_star(s, w):      return Token('RE_STAR', w)
+def make_re_plus(s, w):      return Token('RE_PLUS', w)
+def make_re_range(s, w):     return Token('RE_RANGE', w)
+def make_re_union(s, w):     return Token('RE_UNION', w)
 
 # constants
 ALPHABET   = string.digits + string.ascii_letters + string.punctuation
@@ -124,16 +132,19 @@ SMT_20_TOKENS = [
 SMT_20_STRING_TOKENS = [
     (r'String', make_sort),
 
-    (r'Concat',         make_concat),
-    (r'CharAt',         make_at),
-    (r'Contains',       make_contains),
-    (r'Length',         make_length),
-    (r'IndexOf',        make_sym),
-    (r'Indexof',        make_sym),
-    (r'StartsWith',     make_sym),
-    (r'EndsWith',       make_sym),
-    (r'Replace',        make_sym),
-    (r'Substring',      make_sym),
+    # string
+    (r'Concat',     make_concat),
+    (r'CharAt',     make_at),
+    (r'Contains',   make_contains),
+    (r'Length',     make_length),
+    (r'Indexof2',   make_indexof2),
+    (r'IndexOf2',   make_indexof2),
+    (r'StartsWith', make_prefixof),
+    (r'EndsWith',   make_suffixof),
+    (r'Replace',    make_replace),
+    (r'Substring',  make_substring),
+
+    # regex
     (r'Str2Reg',        make_str_to_re),
     (r'RegexIn',        make_in_re),
     (r'RegexStar',      make_re_star),
@@ -142,23 +153,31 @@ SMT_20_STRING_TOKENS = [
     (r'RegexCharRange', make_re_range),
     (r'RegexUnion',     make_re_union),
 
+    # unique
+    (r'Indexof',     make_indexof),
+    (r'IndexOf',     make_indexof),
+    (r'RegexDigit',  make_sym),
+    (r'LastIndexOf', make_sym),
+
+    # quotes
     (r'"(?:\\.|[^\\"])*"', make_string_lit),
 ]
 
 SMT_25_STRING_TOKENS = [
     (r'String', make_sort),
 
+    # string
     (r'str\.\+\+',     make_concat),
     (r'str\.at',       make_at),
     (r'str\.contains', make_contains),
     (r'str\.len',      make_length),
-    (r'str\.indexof',  make_sym),
-    (r'str\.prefixof', make_sym),
-    (r'str\.suffixof', make_sym),
-    (r'str\.replace',  make_sym),
-    (r'str\.substr',   make_sym),
-    (r'str\.from-int', make_sym),
-    (r'str\.to-int',   make_sym),
+    (r'str\.indexof',  make_indexof2),
+    (r'str\.prefixof', make_prefixof),
+    (r'str\.suffixof', make_suffixof),
+    (r'str\.replace',  make_replace),
+    (r'str\.substr',   make_substring),
+
+    # regex
     (r'str\.to\.re',   make_str_to_re),
     (r'str\.in\.re',   make_in_re),
     (r're\.\*',        make_re_star),
@@ -169,6 +188,11 @@ SMT_25_STRING_TOKENS = [
     (r're\.allchar',   make_re_allchar),
     (r're\.all',       make_re_allchar),
 
+    # integer
+    (r'str\.from-int', make_str_from_int),
+    (r'str\.to-int',   make_str_to_int),
+
+    # quotes
     (r'"(?:""|[^"])*"', make_string_lit),
 ]
 

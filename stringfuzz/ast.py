@@ -19,6 +19,14 @@ __all__ = [
     'ContainsNode',
     'AtNode',
     'LengthNode',
+    'IndexOfNode',
+    'IndexOf2Node',
+    'PrefixOfNode',
+    'SuffixOfNode',
+    'StringReplaceNode',
+    'SubstringNode',
+    'FromIntNode',
+    'ToIntNode',
     'InReNode',
     'StrToReNode',
     'ReConcatNode',
@@ -117,6 +125,38 @@ class AtNode(SpecificExpression):
 class LengthNode(SpecificExpression):
     def __init__(self, a):
         super(LengthNode, self).__init__('Length', [a])
+
+class IndexOfNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(IndexOfNode, self).__init__('IndexOf', [a, b])
+
+class IndexOf2Node(SpecificExpression):
+    def __init__(self, a, b, c):
+        super(IndexOf2Node, self).__init__('IndexOf2', [a, b, c])
+
+class PrefixOfNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(PrefixOfNode, self).__init__('PrefixOf', [a, b])
+
+class SuffixOfNode(SpecificExpression):
+    def __init__(self, a, b):
+        super(SuffixOfNode, self).__init__('SuffixOf', [a, b])
+
+class StringReplaceNode(SpecificExpression):
+    def __init__(self, a, b, c):
+        super(StringReplaceNode, self).__init__('Replace', [a, b, c])
+
+class SubstringNode(SpecificExpression):
+    def __init__(self, a, b, c):
+        super(SubstringNode, self).__init__('Substring', [a, b, c])
+
+class FromIntNode(SpecificExpression):
+    def __init__(self, a):
+        super(FromIntNode, self).__init__('FromInt', [a])
+
+class ToIntNode(SpecificExpression):
+    def __init__(self, a):
+        super(ToIntNode, self).__init__('ToInt', [a])
 
 class InReNode(SpecificExpression):
     def __init__(self, a, b):
