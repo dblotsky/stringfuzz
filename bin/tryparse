@@ -6,23 +6,28 @@ Try parsing all files in given problem lists, and print out the ones that failed
 
 import os
 import sys
-import multiprocessing
+import multiprocessing as mp
 import time
 import datetime
 import traceback
+import queue
+import ctypes
 
-from multiprocessing import Value
+from collections import deque
 
 from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING
 from stringfuzz.scanner import scan_file
 from stringfuzz.parser import parse_file, parse_tokens
 
 # constants
-NUM_WORKERS   = 8
-ESC           = '\033'
-BACK_ONE_LINE = ESC + '[1A'
-ERASE_LINE    = ESC + '[2K'
-FRAME_LENGTH  = 0.1 # in seconds
+DEFAULT_NUM_WORKERS = 8
+BATCH_SIZE          = 100
+MAX_HISTORY         = 500
+ESC                 = '\033'
+BACK_ONE_LINE       = ESC + '[1A'
+ERASE_LINE          = ESC + '[2K'
+FRAME_DURATION      = 0.1 # in seconds
+POISON_PILL         = None
 
 SMT_25_PATTERNS = [
     'dumpCVC4',
@@ -31,7 +36,7 @@ SMT_25_PATTERNS = [
 ]
 
 # globals
-io_lock = multiprocessing.Lock()
+io_lock = mp.Lock()
 
 # helpers
 def reset_cursor():
@@ -55,12 +60,25 @@ def is_smt25(file_path):
     return any(pattern in file_path for pattern in SMT_25_PATTERNS)
 
 # functions
-def parse_problems(problem_paths, num_done):
-    for problem_path in problem_paths:
-        parse_problem(problem_path)
+def consumer(q, num_done, i):
 
-        with num_done.get_lock():
-            num_done.value += 1
+    # run forever
+    while True:
+
+        # try to get a task
+        batch = q.get()
+
+        # stop running if got poison pill
+        if batch is POISON_PILL:
+            break
+
+        # go through problem batch
+        for problem_path in batch:
+            parse_problem(problem_path)
+
+            # signal completion
+            with num_done.get_lock():
+                num_done.value += 1
 
 def parse_problem(input_path):
 
@@ -95,81 +113,61 @@ def parse_problem(input_path):
     # measure run time
     run_time = now() - start_time
 
-def monitor_progress(num_total, num_done, stop_monitoring):
-
-    # get start time
-    start_time = now()
-
-    # print newline to start update line
-    show_progress('')
-
-    # set up bookkeeping
-    done_as_of_now  = 0
-    done_as_of_last = 0
-
-    # run until stopped
-    while stop_monitoring.value == 0:
-
-        # get current number of done problems
-        done_as_of_now = num_done.value
-        done_per_frame = done_as_of_now - done_as_of_last
-
-        # get average run time
-        if done_per_frame > 0:
-            sec_per_run = FRAME_LENGTH / done_per_frame
-        else:
-            sec_per_run = 0.5
-
-        # calculate progress
-        num_left           = num_total - done_as_of_now
-        percent_done       = (float(done_as_of_now) / float(num_total)) * 100.0
-        time_left          = int(float(sec_per_run) * float(num_left))
-        min_left, sec_left = sec2minsec(time_left)
-
-        # format progress
-        seconds_progress = '{:.0f}s'.format(sec_left)
-        minutes_progress = '{:.0f}m'.format(min_left)
-        time_progress    = seconds_progress
-
-        if min_left > 0:
-            time_progress = minutes_progress + ' ' + time_progress
-
-        progress = '{} / {} ({:.2f}%) done; {} left ({:.6f} s per)'.format(
-            done_as_of_now,
-            num_total,
-            percent_done,
-            time_progress,
-            sec_per_run
-        )
-
-        # show progress
-        show_progress(reset_cursor() + progress)
-
-        # record end time as if this was the last run
-        # NOTE:
-        #      this is done so that the last invocation of time.sleep doesn't
-        #      influence the total run time
-        end_time = now()
-
-        # update bookkeeping
-        done_as_of_last = done_as_of_now
-
-        # sleep for a frame
-        time.sleep(FRAME_LENGTH)
-
-    # sanity check; should only stop when all are problems are done
-    assert(num_done.value == num_total)
-
-    # print final results
-    run_time             = end_time - start_time
-    min_total, sec_total = sec2minsec(run_time.seconds)
-    sec_per_run          = run_time.seconds / num_done.value
-    show_progress('finished in {}m {}s, {:.4f}s per run'.format(min_total, sec_total, sec_per_run))
-
 def usage():
     print('Usage', sys.argv[0], 'problem_list [problem_list [...]]', file=sys.stderr)
 
+def add_record(history, last_sample, current_sample):
+
+    # create new record
+    new_record = current_sample - last_sample
+
+    # discard last record if needed
+    if len(history) >= MAX_HISTORY:
+        history.popleft()
+
+    history.append(new_record)
+
+def print_status(history, done_so_far, num_problems):
+
+    # get rate
+    history_size     = len(history)
+    history_problems = sum(history)
+    history_time     = history_size * FRAME_DURATION
+
+    if history_problems > 0:
+        sec_per_problem = history_time / history_problems
+    else:
+        sec_per_problem = FRAME_DURATION
+
+    # calculate progress
+    num_left           = num_problems - done_so_far
+    percent_done       = (float(done_so_far) / float(num_problems)) * 100.0
+    time_left          = int(float(sec_per_problem) * float(num_left))
+    min_left, sec_left = sec2minsec(time_left)
+
+    # format progress
+    seconds_progress = '{:.0f}s'.format(sec_left)
+    minutes_progress = '{:.0f}m'.format(min_left)
+    time_progress    = seconds_progress
+
+    if min_left > 0:
+        time_progress = minutes_progress + ' ' + time_progress
+
+    progress = '{} / {} ({:.2f}%) done; {} left ({:.6f} s per)'.format(
+        done_so_far,
+        num_problems,
+        percent_done,
+        time_progress,
+        sec_per_problem
+    )
+
+    # show progress
+    show_progress(reset_cursor() + progress)
+
 def main():
+
+    # record start time
+    start_time = now()
 
     # get args
     list_paths = sys.argv[1:]
@@ -180,49 +178,70 @@ def main():
         exit(1)
 
     # read input lists
-    inputs = []
+    problems = []
     for list_path in list_paths:
         with open(list_path, 'r') as list_file:
-            inputs += [line.strip() for line in list_file.readlines()]
-    num_total = len(inputs)
-
-    # break input into buckets
-    buckets     = []
-    bucket_size = (num_total // NUM_WORKERS) + 1
-    for i in range(0, num_total, bucket_size):
-        bucket_start = i
-        bucket_end   = i + bucket_size
-        bucket       = inputs[bucket_start:bucket_end]
-        buckets.append(bucket)
+            problems += [line.strip() for line in list_file.readlines()]
+    num_problems = len(problems)
 
     # create shared values
-    num_done              = Value('l')
-    num_done.value        = 0
-    stop_monitoring       = Value('l')
-    stop_monitoring.value = 0
+    num_done = mp.Value(ctypes.c_ulong, 0)
+    q        = mp.Queue()
 
-    # start monitor
-    monitor_args = (num_total, num_done, stop_monitoring)
-    monitor      = multiprocessing.Process(target=monitor_progress, args=monitor_args)
-    monitor.start()
+    # populate queue
+    for i in range(0, num_problems, BATCH_SIZE):
+        batch = problems[i:i + BATCH_SIZE]
+        q.put_nowait(batch)
+
+    # calculate number of workers
+    num_workers = os.cpu_count()
+    if num_workers is None:
+        num_workers = DEFAULT_NUM_WORKERS
+
+    # add poison pills to the end of the queue
+    for i in range(0, num_workers):
+        q.put_nowait(POISON_PILL)
+
+    # create workers
+    workers = [mp.Process(target=consumer, args=(q, num_done, i)) for i in range(num_workers)]
 
     # start workers
-    workers = []
-    for bucket in buckets:
-
-        # run the worker
-        worker_args = (bucket, num_done)
-        worker      = multiprocessing.Process(target=parse_problems, args=worker_args)
+    for worker in workers:
         worker.start()
-        workers.append(worker)
 
-    # wait for the worker workers to finish
+    # print newline to start update line
+    show_progress('')
+
+    # set up bookkeeping
+    last_sample = num_done.value
+    history     = deque()
+
+    # run until done
+    while num_done.value < num_problems:
+
+        # sample number of done problems
+        current_sample = num_done.value
+        add_record(history, last_sample, current_sample)
+
+        # print status
+        print_status(history, current_sample, num_problems)
+
+        # update bookkeeping
+        last_sample = current_sample
+
+        # sleep for a frame
+        time.sleep(FRAME_DURATION)
+
+    # wait for the workers to finish
     for worker in workers:
         worker.join()
 
-    # turn off monitor
-    stop_monitoring.value = 1
-    monitor.join()
+    # print final results
+    end_time             = now()
+    run_time             = end_time - start_time
+    min_total, sec_total = sec2minsec(run_time.seconds)
+    sec_per_problem          = run_time.seconds / num_done.value
+    show_progress('finished in {}m {}s, {:.4f}s per run'.format(min_total, sec_total, sec_per_problem))
 
 if __name__ == '__main__':
     main()
