@@ -6,27 +6,32 @@ Try parsing all files in given problem lists, and print out the ones that failed
 
 import os
 import sys
-import threading
+import multiprocessing
+import time
 import datetime
 import traceback
 
-from collections import deque
+from multiprocessing import Value
 
 from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING
 from stringfuzz.scanner import scan_file
 from stringfuzz.parser import parse_file, parse_tokens
 
 # constants
-MAX_THREADS   = 8
-MAX_HISTORY   = 1000
+NUM_WORKERS   = 8
 ESC           = '\033'
 BACK_ONE_LINE = ESC + '[1A'
 ERASE_LINE    = ESC + '[2K'
+FRAME_LENGTH  = 0.1 # in seconds
+
+SMT_25_PATTERNS = [
+    'dumpCVC4',
+    'smt25',
+    'kaluza25',
+]
 
 # globals
-io_lock      = threading.Lock()
-history_lock = threading.Lock()
-history      = deque()
+io_lock = multiprocessing.Lock()
 
 # helpers
 def reset_cursor():
@@ -46,10 +51,24 @@ def show_progress(*args):
     with io_lock:
         print(*args, file=sys.stderr)
 
-# functions
-def thread_body(input_path, start_time):
+def is_smt25(file_path):
+    return any(pattern in file_path for pattern in SMT_25_PATTERNS)
 
-    if 'smt25' in input_path:
+# functions
+def parse_problems(problem_paths, num_done):
+    for problem_path in problem_paths:
+        parse_problem(problem_path)
+
+        with num_done.get_lock():
+            num_done.value += 1
+
+def parse_problem(input_path):
+
+    # get start time
+    start_time = now()
+
+    # figure out input language
+    if is_smt25(input_path):
         language = SMT_25_STRING
     else:
         language = SMT_20_STRING
@@ -58,7 +77,7 @@ def thread_body(input_path, start_time):
     try:
         tokens = scan_file(input_path, language)
     except IndexError as e:
-        show_failure('failed scanning ' + input_path)
+        show_failure('failed scanning {} {}'.format(input_path, e))
     except Exception as e:
         with io_lock:
             traceback.print_exc()
@@ -73,14 +92,79 @@ def thread_body(input_path, start_time):
             with io_lock:
                 traceback.print_exc()
 
-    # evict old history if needed
-    if len(history) >= MAX_HISTORY:
-        history.popleft()
-
-    # record run time
+    # measure run time
     run_time = now() - start_time
-    with history_lock:
-        history.append(run_time.microseconds / 1000000)
+
+def monitor_progress(num_total, num_done, stop_monitoring):
+
+    # get start time
+    start_time = now()
+
+    # print newline to start update line
+    show_progress('')
+
+    # set up bookkeeping
+    done_as_of_now  = 0
+    done_as_of_last = 0
+
+    # run until stopped
+    while stop_monitoring.value == 0:
+
+        # get current number of done problems
+        done_as_of_now = num_done.value
+        done_per_frame = done_as_of_now - done_as_of_last
+
+        # get average run time
+        if done_per_frame > 0:
+            sec_per_run = FRAME_LENGTH / done_per_frame
+        else:
+            sec_per_run = 0.5
+
+        # calculate progress
+        num_left           = num_total - done_as_of_now
+        percent_done       = (float(done_as_of_now) / float(num_total)) * 100.0
+        time_left          = int(float(sec_per_run) * float(num_left))
+        min_left, sec_left = sec2minsec(time_left)
+
+        # format progress
+        seconds_progress = '{:.0f}s'.format(sec_left)
+        minutes_progress = '{:.0f}m'.format(min_left)
+        time_progress    = seconds_progress
+
+        if min_left > 0:
+            time_progress = minutes_progress + ' ' + time_progress
+
+        progress = '{} / {} ({:.2f}%) done; {} left ({:.6f} s per)'.format(
+            done_as_of_now,
+            num_total,
+            percent_done,
+            time_progress,
+            sec_per_run
+        )
+
+        # show progress
+        show_progress(reset_cursor() + progress)
+
+        # record end time as if this was the last run
+        # NOTE:
+        #      this is done so that the last invocation of time.sleep doesn't
+        #      influence the total run time
+        end_time = now()
+
+        # update bookkeeping
+        done_as_of_last = done_as_of_now
+
+        # sleep for a frame
+        time.sleep(FRAME_LENGTH)
+
+    # sanity check; should only stop when all are problems are done
+    assert(num_done.value == num_total)
+
+    # print final results
+    run_time             = end_time - start_time
+    min_total, sec_total = sec2minsec(run_time.seconds)
+    sec_per_run          = run_time.seconds / num_done.value
+    show_progress('finished in {}m {}s, {:.4f}s per run'.format(min_total, sec_total, sec_per_run))
 
 def usage():
     print('Usage', sys.argv[0], 'problem_list [problem_list [...]]', file=sys.stderr)
@@ -100,73 +184,45 @@ def main():
     for list_path in list_paths:
         with open(list_path, 'r') as list_file:
             inputs += [line.strip() for line in list_file.readlines()]
+    num_total = len(inputs)
 
-    # bookkeeping
-    threads    = []
-    num_done   = 0
-    num_total  = len(inputs)
-    start_time = now()
+    # break input into buckets
+    buckets     = []
+    bucket_size = (num_total // NUM_WORKERS) + 1
+    for i in range(0, num_total, bucket_size):
+        bucket_start = i
+        bucket_end   = i + bucket_size
+        bucket       = inputs[bucket_start:bucket_end]
+        buckets.append(bucket)
 
-    # print newline to start update line
-    show_progress('')
+    # create shared values
+    num_done              = Value('l')
+    num_done.value        = 0
+    stop_monitoring       = Value('l')
+    stop_monitoring.value = 0
 
-    # go through all files
-    for path in inputs:
+    # start monitor
+    monitor_args = (num_total, num_done, stop_monitoring)
+    monitor      = multiprocessing.Process(target=monitor_progress, args=monitor_args)
+    monitor.start()
 
-        # wait for a thread to finish if too many are running
-        if len(threads) > MAX_THREADS:
-            thread.join()
+    # start workers
+    workers = []
+    for bucket in buckets:
 
-        # run the thread
-        thread = threading.Thread(target=thread_body, args=(path, now()))
-        thread.start()
-        threads.append(thread)
+        # run the worker
+        worker_args = (bucket, num_done)
+        worker      = multiprocessing.Process(target=parse_problems, args=worker_args)
+        worker.start()
+        workers.append(worker)
 
-        # update bookkeeping
-        num_done += 1
+    # wait for the worker workers to finish
+    for worker in workers:
+        worker.join()
 
-        # get average run time
-        with history_lock:
-            if len(history) > 0:
-                sec_per_run = sum(history) / len(history)
-            else:
-                sec_per_run = 0.5
-
-        # calculate progress
-        num_left           = num_total - num_done
-        percent_left       = (float(num_done) / float(num_total)) * 100.0
-        time_left          = int(float(sec_per_run) * float(num_left))
-        min_left, sec_left = sec2minsec(time_left)
-
-        # format progress
-        seconds_progress = '{:.0f}s'.format(sec_left)
-        minutes_progress = '{:.0f}m'.format(min_left)
-        time_progress    = seconds_progress
-
-        if min_left > 0:
-            time_progress = minutes_progress + ' ' + time_progress
-
-        progress = '{} / {} ({:.2f}%) done; {} left ({:.6f} s per)'.format(
-            num_done,
-            num_total,
-            percent_left,
-            time_progress,
-            sec_per_run
-        )
-
-        # show progress
-        show_progress(reset_cursor() + progress)
-
-    # wait for the remaining threads to finish
-    for thread in threads:
-        thread.join()
-
-    # print final results
-    end_time             = now()
-    run_time             = end_time - start_time
-    min_total, sec_total = sec2minsec(run_time.seconds)
-    sec_per_run          = run_time.seconds / num_done
-    show_progress('finished in {}m {}s, {:.4f}s per run'.format(min_total, sec_total, sec_per_run))
+    # turn off monitor
+    stop_monitoring.value = 1
+    monitor.join()
 
 if __name__ == '__main__':
     main()
