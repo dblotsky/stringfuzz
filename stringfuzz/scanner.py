@@ -36,26 +36,27 @@ def make_int_lit(s, w):    return Token('INT_LIT', w)
 def make_sym(s, w):        return Token('SYMBOL', w)
 
 # specific symbol tokens
-def make_contains(s, w):     return Token('CONTAINS', w)
-def make_concat(s, w):       return Token('CONCAT', w)
-def make_at(s, w):           return Token('AT', w)
-def make_indexof(s, w):      return Token('INDEXOF', w)
-def make_indexof2(s, w):     return Token('INDEXOF2', w)
-def make_prefixof(s, w):     return Token('PREFIXOF', w)
-def make_suffixof(s, w):     return Token('SUFFIXOF', w)
-def make_replace(s, w):      return Token('REPLACE', w)
-def make_substring(s, w):    return Token('SUBSTRING', w)
-def make_str_from_int(s, w): return Token('FROM_INT', w)
-def make_str_to_int(s, w):   return Token('TO_INT', w)
-def make_length(s, w):       return Token('LENGTH', w)
-def make_in_re(s, w):        return Token('IN_RE', w)
-def make_str_to_re(s, w):    return Token('STR_TO_RE', w)
-def make_re_allchar(s, w):   return Token('RE_ALLCHAR', w)
-def make_re_concat(s, w):    return Token('RE_CONCAT', w)
-def make_re_star(s, w):      return Token('RE_STAR', w)
-def make_re_plus(s, w):      return Token('RE_PLUS', w)
-def make_re_range(s, w):     return Token('RE_RANGE', w)
-def make_re_union(s, w):     return Token('RE_UNION', w)
+def make_contains(s, w):         return Token('CONTAINS', w)
+def make_concat(s, w):           return Token('CONCAT', w)
+def make_at(s, w):               return Token('AT', w)
+def make_indexof_var_args(s, w): return Token('INDEXOFVAR', w)
+def make_indexof_2_args(s, w):   return Token('INDEXOF', w)
+def make_indexof_3_args(s, w):   return Token('INDEXOF2', w)
+def make_prefixof(s, w):         return Token('PREFIXOF', w)
+def make_suffixof(s, w):         return Token('SUFFIXOF', w)
+def make_replace(s, w):          return Token('REPLACE', w)
+def make_substring(s, w):        return Token('SUBSTRING', w)
+def make_str_from_int(s, w):     return Token('FROM_INT', w)
+def make_str_to_int(s, w):       return Token('TO_INT', w)
+def make_length(s, w):           return Token('LENGTH', w)
+def make_in_re(s, w):            return Token('IN_RE', w)
+def make_str_to_re(s, w):        return Token('STR_TO_RE', w)
+def make_re_allchar(s, w):       return Token('RE_ALLCHAR', w)
+def make_re_concat(s, w):        return Token('RE_CONCAT', w)
+def make_re_star(s, w):          return Token('RE_STAR', w)
+def make_re_plus(s, w):          return Token('RE_PLUS', w)
+def make_re_range(s, w):         return Token('RE_RANGE', w)
+def make_re_union(s, w):         return Token('RE_UNION', w)
 
 # constants
 ALPHABET   = string.digits + string.ascii_letters + string.punctuation
@@ -138,8 +139,8 @@ SMT_20_STRING_TOKENS = [
     (r'CharAt',     make_at),
     (r'Contains',   make_contains),
     (r'Length',     make_length),
-    (r'Indexof2',   make_indexof2),
-    (r'IndexOf2',   make_indexof2),
+    (r'Indexof2',   make_indexof_3_args),
+    (r'IndexOf2',   make_indexof_3_args),
     (r'StartsWith', make_prefixof),
     (r'EndsWith',   make_suffixof),
     (r'Replace',    make_replace),
@@ -155,10 +156,11 @@ SMT_20_STRING_TOKENS = [
     (r'RegexUnion',     make_re_union),
 
     # unique
-    (r'Indexof',     make_indexof),
-    (r'IndexOf',     make_indexof),
+    (r'Indexof',     make_indexof_2_args),
+    (r'IndexOf',     make_indexof_2_args),
     (r'RegexDigit',  make_sym),
     (r'LastIndexOf', make_sym),
+    (r'LastIndexof', make_sym),
 
     # quotes
     (r'"(?:\\.|[^\\"])*"', make_string_lit),
@@ -172,7 +174,7 @@ SMT_25_STRING_TOKENS = [
     (r'str\.at',       make_at),
     (r'str\.contains', make_contains),
     (r'str\.len',      make_length),
-    (r'str\.indexof',  make_indexof2),
+    (r'str\.indexof',  make_indexof_var_args),
     (r'str\.prefixof', make_prefixof),
     (r'str\.suffixof', make_suffixof),
     (r'str\.replace',  make_replace),

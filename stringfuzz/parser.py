@@ -104,6 +104,21 @@ def get_expression(s):
         s.expect('RPAREN')
         return LengthNode(a)
 
+    elif s.accept('INDEXOFVAR'):
+
+        # two arguments are expected
+        a = expect_arg(s)
+        b = expect_arg(s)
+
+        # the third argument may or may not be there
+        c = get_arg(s)
+        s.expect('RPAREN')
+
+        if c is not None:
+            return IndexOf2Node(a, b, c)
+
+        return IndexOfNode(a, b)
+
     elif s.accept('INDEXOF'):
         a = expect_arg(s)
         b = expect_arg(s)

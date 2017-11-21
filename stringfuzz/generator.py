@@ -55,6 +55,9 @@ def generate_node(node, language):
     elif isinstance(node, ArgsNode):
         return '()'
 
+    elif isinstance(node, SettingNode):
+        return node.name
+
     elif isinstance(node, ReAllCharNode):
         if language == SMT_25_STRING:
             return 're.allchar'
@@ -117,6 +120,8 @@ def generate_expr(e, language):
     elif isinstance(e, IndexOfNode):
         if language == SMT_20_STRING:
             components.append('IndexOf')
+        elif language == SMT_25_STRING:
+            components.append('str.indexof')
         else:
             raise NotSupported(e, language)
 

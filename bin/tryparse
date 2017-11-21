@@ -15,9 +15,10 @@ import ctypes
 
 from collections import deque
 
-from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING
+from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING, LANGUAGES
 from stringfuzz.scanner import scan_file
 from stringfuzz.parser import parse_file, parse_tokens
+from stringfuzz.generator import generate
 
 # constants
 DEFAULT_NUM_WORKERS = 8
@@ -26,12 +27,13 @@ MAX_HISTORY         = 500
 ESC                 = '\033'
 BACK_ONE_LINE       = ESC + '[1A'
 ERASE_LINE          = ESC + '[2K'
-FRAME_DURATION      = 0.1 # in seconds
+FRAME_DURATION      = 0.05 # in seconds
 POISON_PILL         = None
 
 SMT_25_PATTERNS = [
     'dumpCVC4',
     'smt25',
+    '/cvc4/',
     'kaluza25',
 ]
 
@@ -109,6 +111,17 @@ def parse_problem(input_path):
         except Exception as e:
             with io_lock:
                 traceback.print_exc()
+
+        # if parsed, try to generate
+        else:
+            for output_language in [SMT_25_STRING, SMT_20_STRING]:
+                try:
+                    translated = generate(expressions, output_language)
+                except ValueError as e:
+                    show_failure('failed generating {} {}'.format(input_path, e))
+                except Exception as e:
+                    with io_lock:
+                        traceback.print_exc();
 
     # measure run time
     run_time = now() - start_time
@@ -240,7 +253,7 @@ def main():
     end_time             = now()
     run_time             = end_time - start_time
     min_total, sec_total = sec2minsec(run_time.seconds)
-    sec_per_problem          = run_time.seconds / num_done.value
+    sec_per_problem      = run_time.seconds / num_done.value
     show_progress('finished in {}m {}s, {:.4f}s per run'.format(min_total, sec_total, sec_per_problem))
 
 if __name__ == '__main__':
