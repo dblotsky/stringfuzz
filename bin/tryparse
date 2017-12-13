@@ -22,7 +22,7 @@ from stringfuzz.generator import generate
 
 # constants
 DEFAULT_NUM_WORKERS = 8
-BATCH_SIZE          = 100
+BATCH_SIZE          = 50
 MAX_HISTORY         = 500
 ESC                 = '\033'
 BACK_ONE_LINE       = ESC + '[1A'
