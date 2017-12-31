@@ -6,27 +6,35 @@ The fuzzer tool that transforms existing problems.
 
 import sys
 import argparse
+import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate
+from stringfuzz.transformers import unprintable, nop, rotate, litfuzz
 from stringfuzz.generator import generate
+from stringfuzz.parser import parse
 
 # constants
 UNPRINTABLE = 'unprintable'
 NOP         = 'nop'
 ROTATE      = 'rotate'
+LITFUZZ      = 'litfuzz'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
     NOP:         nop,
-    ROTATE:      rotate
+    ROTATE:      rotate,
+    LITFUZZ:     litfuzz
 }
+
+# defaults
+DEFAULT_SEED           = 0
+DEFAULT_RANDOM         = False
 
 def main():
 
     # create arg parser
-    parser = argparse.ArgumentParser(description='SMTLIB 2.* problem transformer.')
-    parser.add_argument(
+    global_parser = argparse.ArgumentParser(description='SMTLIB 2.* problem transformer.')
+    global_parser.add_argument(
         '--file',
         '-f',
         dest    = 'file',
@@ -35,7 +43,7 @@ def main():
         type    = argparse.FileType('r'),
         help    = 'input file (default: stdin)'
     )
-    parser.add_argument(
+    global_parser.add_argument(
         '--in-lang',
         '-i',
         dest    = 'input_language',
@@ -44,7 +52,7 @@ def main():
         default = SMT_25_STRING,
         help    = 'input language (default: {})'.format(SMT_25_STRING)
     )
-    parser.add_argument(
+    global_parser.add_argument(
         '--out-lang',
         '-o',
         dest    = 'output_language',
@@ -53,25 +61,53 @@ def main():
         default = SMT_25_STRING,
         help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
-    parser.add_argument(
-        'transformer',
+    global_parser.add_argument(
+        'transformers',
         type    = str,
         choices = TRANSFORMERS.keys(),
-        help    = 'transformation to perform'
+        nargs   = "+",
+        help    = 'transformations to perform'
+    )
+
+    seed_group = global_parser.add_mutually_exclusive_group()
+    seed_group.add_argument(
+        '--seed',
+        '-s',
+        dest    = 'seed',
+        metavar = 'S',
+        type    = int,
+        default = DEFAULT_SEED,
+        help    = 'seed for random number generator (default: {})'.format(DEFAULT_SEED)
+    )
+    seed_group.add_argument(
+        '--random',
+        '-r',
+        dest    = 'random',
+        action  = 'store_true',
+        default = DEFAULT_RANDOM,
+        help    = 'seed the random number generator with the current time (default: {})'.format(DEFAULT_RANDOM)
     )
 
     # parse args
-    args = parser.parse_args()
+    args = global_parser.parse_args()
+
+    # seed the RNG
+    if args.random is True:
+        random.seed()
+    else:
+        random.seed(args.seed)
 
     # get transformer
-    transformer = TRANSFORMERS[args.transformer]
+    transformers = [TRANSFORMERS[a] for a in args.transformers]
 
     # read input
     raw_in = args.file.read()
 
     # run transformer
     try:
-        transformed = transformer(raw_in, args.input_language)
+        transformed = parse(raw_in, args.input_language)
+        for transformer in transformers:
+            transformed = transformer(transformed)
     except IndexError as e:
         print(e, file=sys.stderr)
         return 1

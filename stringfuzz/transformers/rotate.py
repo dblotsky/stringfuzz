@@ -2,7 +2,6 @@ import random
 import string
 
 from stringfuzz.ast import *
-from stringfuzz.parser import parse
 from stringfuzz.ast_walker import ASTWalker
 
 __all__ = [
@@ -73,7 +72,6 @@ class ASTTransformer(ASTWalker):
 
 
 # public API
-def rotate(s, language):
-    expressions = parse(s, language)
+def rotate(expressions):
     transformer = ASTTransformer(expressions).walk()
     return transformer.ast
