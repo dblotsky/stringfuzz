@@ -8,16 +8,18 @@ import sys
 import argparse
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop
+from stringfuzz.transformers import unprintable, nop, rotate
 from stringfuzz.generator import generate
 
 # constants
 UNPRINTABLE = 'unprintable'
 NOP         = 'nop'
+ROTATE      = 'rotate'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
-    NOP:         nop
+    NOP:         nop,
+    ROTATE:      rotate
 }
 
 def main():
