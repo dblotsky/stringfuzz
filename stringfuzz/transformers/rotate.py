@@ -8,9 +8,9 @@ __all__ = [
     'rotate',
 ]
 
-class ASTTransformer(ASTWalker):
+class RotateTransformer(ASTWalker):
     def __init__(self, ast):
-        super(ASTTransformer, self).__init__(ast)
+        super(RotateTransformer, self).__init__(ast)
 
     @property
     def ast(self):
@@ -73,5 +73,5 @@ class ASTTransformer(ASTWalker):
 
 # public API
 def rotate(expressions):
-    transformer = ASTTransformer(expressions).walk()
+    transformer = RotateTransformer(expressions).walk()
     return transformer.ast
