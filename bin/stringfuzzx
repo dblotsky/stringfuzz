@@ -18,7 +18,7 @@ UNPRINTABLE = 'unprintable'
 NOP         = 'nop'
 ROTATE      = 'rotate'
 FUZZ        = 'fuzz'
-STEM_CUT      = 'stem-cut'
+STEM_CUT    = 'stem-cut'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
