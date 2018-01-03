@@ -4,6 +4,7 @@ import random
 import string
 
 from stringfuzz.ast import ExpressionNode, StringLitNode
+from stringfuzz.parser import parse
 
 __all__ = [
     'unprintable',
@@ -51,7 +52,8 @@ def make_unprintable_expression(expression, charmap):
             expression.body[i] = StringLitNode(new_string)
 
 # public API
-def unprintable(expressions):
+def unprintable(s, language):
+    expressions = parse(s, language)
     charmap     = make_charmap()
 
     for expression in expressions:

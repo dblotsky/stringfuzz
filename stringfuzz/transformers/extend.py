@@ -2,6 +2,7 @@ import random
 
 from stringfuzz.ast import *
 from stringfuzz.ast_walker import ASTWalker
+from stringfuzz.parser import parse
 
 __all__ = [
     'extend',
@@ -76,6 +77,7 @@ def int_type(expr):
     return False
 
 # public API
-def extend(expressions):
+def extend(s, language):
+    expressions = parse(s, language)
     transformer = ExtendTransformer(expressions).walk()
     return transformer.ast

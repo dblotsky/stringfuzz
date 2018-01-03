@@ -3,6 +3,7 @@ import random
 from stringfuzz.ast import *
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
+from stringfuzz.parser import parse
 
 __all__ = [
     'stub',
@@ -35,6 +36,7 @@ class StubTransformer(ASTWalker):
                     expr.body[i] = StringLitNode(random_text(length))
 
 # public API
-def stub(expressions):
+def stub(s, language):
+    expressions = parse(s, language)
     transformer = StubTransformer(expressions).walk()
     return transformer.ast

@@ -9,7 +9,7 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, litfuzz, extend, stub
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, extend, stub
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 
@@ -17,7 +17,7 @@ from stringfuzz.parser import parse
 UNPRINTABLE = 'unprintable'
 NOP         = 'nop'
 ROTATE      = 'rotate'
-LITFUZZ     = 'litfuzz'
+FUZZ        = 'fuzz'
 EXTEND      = 'extend'
 STUB        = 'stub'
 
@@ -25,14 +25,14 @@ TRANSFORMERS = {
     UNPRINTABLE: unprintable,
     NOP:         nop,
     ROTATE:      rotate,
-    LITFUZZ:     litfuzz,
+    FUZZ:        fuzz,
     EXTEND:      extend,
     STUB:        stub
 }
 
 # defaults
-DEFAULT_SEED           = 0
-DEFAULT_RANDOM         = False
+DEFAULT_SEED   = 0
+DEFAULT_RANDOM = False
 
 def main():
 
@@ -66,10 +66,9 @@ def main():
         help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
     global_parser.add_argument(
-        'transformers',
+        'transformer',
         type    = str,
         choices = TRANSFORMERS.keys(),
-        nargs   = "+",
         help    = 'transformations to perform'
     )
 
@@ -102,16 +101,14 @@ def main():
         random.seed(args.seed)
 
     # get transformer
-    transformers = [TRANSFORMERS[a] for a in args.transformers]
+    transformer = TRANSFORMERS[args.transformer]
 
     # read input
     raw_in = args.file.read()
 
     # run transformer
     try:
-        transformed = parse(raw_in, args.input_language)
-        for transformer in transformers:
-            transformed = transformer(transformed)
+        transformed = transformer(raw_in, args.input_language)
     except IndexError as e:
         print(e, file=sys.stderr)
         return 1

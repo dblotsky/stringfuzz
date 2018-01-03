@@ -3,6 +3,7 @@ import string
 
 from stringfuzz.ast import *
 from stringfuzz.ast_walker import ASTWalker
+from stringfuzz.parser import parse
 
 __all__ = [
     'rotate',
@@ -17,61 +18,24 @@ class RotateTransformer(ASTWalker):
         return self._ASTWalker__ast
 
     def exit_expression(self, expr):
-        if isinstance(expr, ConcatNode):
-            if isinstance(expr.body[0], ConcatNode):
-                # rotate clockwise ll, lr, r
-                temp = expr.body[1]
-                expr.body[1] = expr.body[0].body[0]
-                expr.body[0].body[0] = expr.body[0].body[1]
-                expr.body[0].body[1] = temp
-            if isinstance(expr.body[1], ConcatNode):
-                # rotate clockwise l, rl, rr
-                temp = expr.body[0]
-                expr.body[0] = expr.body[1].body[0]
-                expr.body[1].body[0] = expr.body[1].body[1]
-                expr.body[1].body[1] = temp   
-        elif isinstance(expr, ReConcatNode):
-            if isinstance(expr.body[0], ReConcatNode):
-                # rotate clockwise ll, lr, r
-                temp = expr.body[1]
-                expr.body[1] = expr.body[0].body[0]
-                expr.body[0].body[0] = expr.body[0].body[1]
-                expr.body[0].body[1] = temp
-            if isinstance(expr.body[1], ReConcatNode):
-                # rotate clockwise l, rl, rr
-                temp = expr.body[0]
-                expr.body[0] = expr.body[1].body[0]
-                expr.body[1].body[0] = expr.body[1].body[1]
-                expr.body[1].body[1] = temp
-        elif isinstance(expr, ReUnionNode):
-            if isinstance(expr.body[0], ReUnionNode):
-                # rotate clockwise ll, lr, r
-                temp = expr.body[1]
-                expr.body[1] = expr.body[0].body[0]
-                expr.body[0].body[0] = expr.body[0].body[1]
-                expr.body[0].body[1] = temp
-            if isinstance(expr.body[1], ReUnionNode):
-                # rotate clockwise l, rl, rr
-                temp = expr.body[0]
-                expr.body[0] = expr.body[1].body[0]
-                expr.body[1].body[0] = expr.body[1].body[1]
-                expr.body[1].body[1] = temp
-        elif isinstance(expr, InReNode):
-            if isinstance(expr.body[0], InReNode):
-                # rotate clockwise ll, lr, r
-                temp = expr.body[1]
-                expr.body[1] = expr.body[0].body[0]
-                expr.body[0].body[0] = expr.body[0].body[1]
-                expr.body[0].body[1] = temp
-            if isinstance(expr.body[1], InReNode):
-                # rotate clockwise l, rl, rr
-                temp = expr.body[0]
-                expr.body[0] = expr.body[1].body[0]
-                expr.body[1].body[0] = expr.body[1].body[1]
-                expr.body[1].body[1] = temp
-
+        for uniform in [ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS]:
+            # need at least two top level children
+            if any([isinstance(expr, C) for C in uniform]) and len(expr.body) > 1:
+                for i in range(len(expr.body)):
+                    if any([isinstance(expr.body[i], C) for C in uniform]):
+                        # rotate clockwise
+                        # j is the other top level child
+                        if i == len(expr.body)-1:
+                            j = 0
+                        else:
+                            j = len(expr.body)-1
+                        temp = expr.body[j]
+                        expr.body[j] = expr.body[i].body[0]
+                        new_body = expr.body[i].body[1:] + [temp]
+                        expr.body[i].body = new_body
 
 # public API
-def rotate(expressions):
+def rotate(s, language):
+    expressions = parse(s, language)
     transformer = RotateTransformer(expressions).walk()
     return transformer.ast
