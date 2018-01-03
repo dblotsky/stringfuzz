@@ -9,7 +9,7 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, extend, stub
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, stem_cut
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 
@@ -18,16 +18,14 @@ UNPRINTABLE = 'unprintable'
 NOP         = 'nop'
 ROTATE      = 'rotate'
 FUZZ        = 'fuzz'
-EXTEND      = 'extend'
-STUB        = 'stub'
+STEM_CUT      = 'stem-cut'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
     NOP:         nop,
     ROTATE:      rotate,
     FUZZ:        fuzz,
-    EXTEND:      extend,
-    STUB:        stub
+    STEM_CUT:    stem_cut
 }
 
 # defaults
