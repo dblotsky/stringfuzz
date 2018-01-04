@@ -1,23 +1,23 @@
 '''
-The stem-cut transform picks a subtree and a leaf at random
-and swaps them for each type. Almost like cutting a stem and planting it 
-somewhere else. Names are hard.
+The graft transform picks a subtree and a leaf at random
+and swaps them for each type.
 '''
 
 import random
 
 from stringfuzz.ast import *
+from stringfuzz.types import *
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
 from stringfuzz.parser import parse
 
 __all__ = [
-    'stem_cut',
+    'graft',
 ]
 
-class StemCutTransformer(ASTWalker):
+class GraftTransformer(ASTWalker):
     def __init__(self, ast, pairs):
-        super(StemCutTransformer, self).__init__(ast)
+        super(GraftTransformer, self).__init__(ast)
         self.pairs = pairs
 
     @property
@@ -32,9 +32,9 @@ class StemCutTransformer(ASTWalker):
                 elif expr.body[i] == pair[1]:
                     expr.body[i] = pair[0]
 
-class StemCutFinder(ASTWalker):
+class GraftFinder(ASTWalker):
     def __init__(self, ast):
-        super(StemCutFinder, self).__init__(ast)
+        super(GraftFinder, self).__init__(ast)
         #            expr, lit
         self.str  = [None, None]
         self.bool = [None, None]
@@ -55,7 +55,7 @@ class StemCutFinder(ASTWalker):
         return pairs
 
     def enter_literal(self, literal):
-        replace = random.random() < 0.5
+        replace = random.choice([True, False])
         if isinstance(literal, StringLitNode):
             if self.str[1]:
                 if replace:
@@ -76,15 +76,16 @@ class StemCutFinder(ASTWalker):
                 self.int[1] = literal
 
     def enter_identifier(self, ident):
-        #TODO can we have non-string identifiers?
-        if self.str[1]:
-            if random.random() < 0.5:
-                self.str[1] = ident
-        else:
-            self.str[1] = ident
+        #TODO How to check type of identifiers?
+        # if self.str[1]:
+        #     if random.random() < 0.5:
+        #         self.str[1] = ident
+        # else:
+        #     self.str[1] = ident
+        pass
 
     def enter_expression(self, expr):
-        replace = random.random() < 0.5
+        replace = random.choice([True, False])
         if isinstance(expr, StrToReNode):
             # take StrToReNode's to be literals for RX
             if self.rx[1]:
@@ -121,8 +122,8 @@ class StemCutFinder(ASTWalker):
 
 
 # public API
-def stem_cut(s, language):
+def graft(s, language):
     expressions = parse(s, language)
-    finder = StemCutFinder(expressions).walk()
-    transformer = StemCutTransformer(expressions, finder.pairs).walk()
+    finder = GraftFinder(expressions).walk()
+    transformer = GraftTransformer(expressions, finder.pairs).walk()
     return transformer.ast

@@ -17,6 +17,7 @@ to regex +.
 import random
 
 from stringfuzz.ast import *
+from stringfuzz.types import *
 from stringfuzz import ALL_CHARS
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
@@ -41,13 +42,13 @@ class LitTransformer(ASTWalker):
             new_val = ""
             for c in literal.value:
                 # With equal probability replace, keep, or delete.
-                choice = random.random()
-                if choice >= 0.66:
+                choice = random.randint(1,3)
+                if choice == 1:
                     # replace it with a sequence
                     length = len(literal.value)
                     length = random.randint(1, length)
                     new_val += random_text(length)
-                elif choice >= 0.33:
+                elif choice == 2:
                     new_val += c
                 else:
                     #delete it
@@ -55,12 +56,13 @@ class LitTransformer(ASTWalker):
             literal.value = new_val
     
     def exit_expression(self, expr):
-        for type_list in REPLACEABLE:
+        for type_list in REPLACEABLE_OPS:
             for i in range(len(expr.body)):
-                # Check if its a replaceable type, if so, randomly replace it 
-                if any([isinstance(expr.body[i], C) for C in type_list]):
-                    choice = random.randint(0, len(type_list)-1)
-                    expr.body[i] = type_list[choice](*expr.body[i].body)
+                # Check if its a replaceable type, if so, randomly replace it
+                replaceable = [isinstance(expr.body[i], C) for C in type_list]
+                if any(replaceable):
+                    choice = random.choice(type_list)
+                    expr.body[i] = choice(*expr.body[i].body)
 
 # public API
 def fuzz(s, language):

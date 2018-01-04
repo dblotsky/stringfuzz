@@ -2,6 +2,7 @@ import random
 import string
 
 from stringfuzz.ast import *
+from stringfuzz.types import *
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.parser import parse
 
@@ -20,9 +21,11 @@ class RotateTransformer(ASTWalker):
     def exit_expression(self, expr):
         for uniform in [ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS]:
             # need at least two top level children
-            if any([isinstance(expr, C) for C in uniform]) and len(expr.body) > 1:
+            uniform_expr = [isinstance(expr, C) for C in uniform]
+            if any(uniform_expr) and len(expr.body) > 1:
                 for i in range(len(expr.body)):
-                    if any([isinstance(expr.body[i], C) for C in uniform]):
+                    uniform_child = [isinstance(expr.body[i], C) for C in uniform]
+                    if any(uniform_child):
                         # rotate clockwise
                         # j is the other top level child
                         if i == len(expr.body)-1:
