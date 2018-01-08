@@ -44,9 +44,9 @@ def get_arg(s):
 
     # literal
     elif s.accept('BOOL_LIT'):
-        if arg == 'true':
+        if arg.value == 'true':
             return BoolLitNode(True)
-        elif arg == 'false':
+        elif arg.value == 'false':
             return BoolLitNode(False)
     elif s.accept('INT_LIT'):
         return IntLitNode(int(arg.value))

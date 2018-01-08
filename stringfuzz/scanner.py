@@ -120,10 +120,16 @@ SMT_20_TOKENS = [
     (r'\)', make_rparen),
 
     # symbols
-    (r'[\w\d_]+', make_identifier),
-    (r'true',     make_bool_lit),
-    (r'false',    make_bool_lit),
-    (r'\d+',      make_int_lit),
+    (r'true',  make_bool_lit),
+    (r'false', make_bool_lit),
+
+    # int literals are digits not followed by word characters
+    (r'\d+(?!\w)', make_int_lit),
+
+    # identifiers start with non-digits, followed by word characters
+    (r'\w(?<!\d)\w*', make_identifier),
+
+    # settings start with colons
     (r':[\w_-]+', make_setting),
 
     # comments
