@@ -35,7 +35,7 @@ class MultiplyTransformer(ASTWalker):
 
 # public API
 def multiply(s, language):
-    factor=random.randint(2,MAX_FACTOR)
+    factor = random.randint(2, MAX_FACTOR)
     expressions = parse(s, language)
     transformer = MultiplyTransformer(expressions, factor).walk()
     return transformer.ast
