@@ -97,7 +97,11 @@ def parse_problem(input_path):
     try:
         tokens = scan_file(input_path, language)
     except IndexError as e:
-        show_failure('failed scanning {} {}'.format(input_path, e))
+        show_failure('{language:<5} failed scanning {problem}\n{error}'.format(
+            path     = input_path,
+            language = language,
+            error    = e
+        ))
     except Exception as e:
         with io_lock:
             traceback.print_exc()
@@ -107,7 +111,11 @@ def parse_problem(input_path):
         try:
             expressions = parse_tokens(tokens, language)
         except IndexError as e:
-            show_failure('failed parsing ' + input_path)
+            show_failure('{language:<5} failed parsing {path}\n{error}'.format(
+                path     = input_path,
+                language = language,
+                error    = e
+            ))
         except Exception as e:
             with io_lock:
                 traceback.print_exc()
@@ -118,7 +126,11 @@ def parse_problem(input_path):
                 try:
                     translated = generate(expressions, output_language)
                 except ValueError as e:
-                    show_failure('failed generating {} {}'.format(input_path, e))
+                    show_failure('{language:<5} failed generating {path}\n{error}'.format(
+                        path     = input_path,
+                        language = language,
+                        error    = e
+                    ))
                 except Exception as e:
                     with io_lock:
                         traceback.print_exc();

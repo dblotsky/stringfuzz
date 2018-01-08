@@ -129,18 +129,18 @@ SMT_20_TOKENS = [
     (r'true',  make_bool_lit),
     (r'false', make_bool_lit),
 
-    # int literals: digits not followed by word characters
-    (r'\d+(?!\w)', make_int_lit),
+    # int literals: digits not followed by identifier characters
+    (r'\d+(?!' + ID_CHAR + r')', make_int_lit),
+
+    # comments
+    (r';[^\n]*', make_whitespace),
+    (r'//[^\n]*', make_whitespace),
 
     # identifiers: can use most characters, but can't start with digits
     (ID_CHAR + r'(?<!\d)' + ID_CHAR + r'*', make_identifier),
 
     # settings: can use most characters, and start with colons
     (r':' + SETTING_CHAR + r'+', make_setting),
-
-    # comments
-    (r';[^\n]*', make_whitespace),
-    (r'//[^\n]*', make_whitespace),
 ]
 
 SMT_20_STRING_TOKENS = [
