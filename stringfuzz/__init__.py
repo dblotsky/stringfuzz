@@ -1,0 +1,3 @@
+from stringfuzz.scanner import ALPHABET, WHITESPACE
+
+ALL_CHARS = ALPHABET + WHITESPACE

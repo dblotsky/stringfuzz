@@ -34,7 +34,7 @@ __all__ = [
     'RePlusNode',
     'ReRangeNode',
     'ReUnionNode',
-    'ReAllCharNode',
+    'ReAllCharNode'
 ]
 
 # data structures
