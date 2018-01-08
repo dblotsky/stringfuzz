@@ -59,10 +59,16 @@ def make_re_range(s, w):         return Token('RE_RANGE', w)
 def make_re_union(s, w):         return Token('RE_UNION', w)
 
 # constants
-ALPHABET   = string.digits + string.ascii_letters + string.punctuation
-WHITESPACE = string.whitespace
+ALPHABET     = string.digits + string.ascii_letters + string.punctuation
+WHITESPACE   = string.whitespace
+ID_CHAR      = r'[\w._\+\-\*\=%?!$_~&^<>@/\\]'
+SETTING_CHAR = r'[\w._\+\-\*\=%?!$_~&^<>@/]'
 
 # token lists
+# NOTE:
+#      more specific patterns (e.g. reserved words) have to come before more
+#      general patterns (e.g. identifiers) because otherwise the more general
+#      pattern will match before the more specific one
 SMT_20_TOKENS = [
 
     # sorts
@@ -119,18 +125,18 @@ SMT_20_TOKENS = [
     (r'\(', make_lparen),
     (r'\)', make_rparen),
 
-    # symbols
+    # boolean literals
     (r'true',  make_bool_lit),
     (r'false', make_bool_lit),
 
-    # int literals are digits not followed by word characters
+    # int literals: digits not followed by word characters
     (r'\d+(?!\w)', make_int_lit),
 
-    # identifiers start with non-digits, followed by word characters
-    (r'\w(?<!\d)\w*', make_identifier),
+    # identifiers: can use most characters, but can't start with digits
+    (ID_CHAR + r'(?<!\d)' + ID_CHAR + r'*', make_identifier),
 
-    # settings start with colons
-    (r':[\w_-]+', make_setting),
+    # settings: can use most characters, and start with colons
+    (r':' + SETTING_CHAR + r'+', make_setting),
 
     # comments
     (r';[^\n]*', make_whitespace),
