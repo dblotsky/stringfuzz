@@ -9,7 +9,7 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 
@@ -19,13 +19,19 @@ NOP         = 'nop'
 ROTATE      = 'rotate'
 FUZZ        = 'fuzz'
 GRAFT       = 'graft'
+TRANSLATE   = 'translate'
+REVERSE     = 'reverse'
+MULTIPLY    = 'multiply'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
     NOP:         nop,
     ROTATE:      rotate,
     FUZZ:        fuzz,
-    GRAFT:       graft
+    GRAFT:       graft,
+    TRANSLATE:   translate,
+    REVERSE:     reverse,
+    MULTIPLY:    multiply
 }
 
 # defaults
@@ -67,7 +73,7 @@ def main():
         'transformer',
         type    = str,
         choices = TRANSFORMERS.keys(),
-        help    = 'transformations to perform'
+        help    = 'transformation to perform'
     )
 
     seed_group = global_parser.add_mutually_exclusive_group()
