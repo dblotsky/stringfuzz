@@ -65,7 +65,6 @@ class LitTransformer(ASTWalker):
                     expr.body[i] = choice(*expr.body[i].body)
 
 # public API
-def fuzz(s, language):
-    expressions = parse(s, language)
-    transformer = LitTransformer(expressions).walk()
+def fuzz(ast):
+    transformer = LitTransformer(ast).walk()
     return transformer.ast

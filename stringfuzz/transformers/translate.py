@@ -30,7 +30,6 @@ class TranslateTransformer(ASTWalker):
             literal.value = literal.value.translate(self.table)
 
 # public API
-def translate(s, language):
-    expressions = parse(s, language)
-    transformer = TranslateTransformer(expressions).walk()
+def translate(ast):
+    transformer = TranslateTransformer(ast).walk()
     return transformer.ast

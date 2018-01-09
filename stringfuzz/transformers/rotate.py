@@ -38,7 +38,6 @@ class RotateTransformer(ASTWalker):
                         expr.body[i].body = new_body
 
 # public API
-def rotate(s, language):
-    expressions = parse(s, language)
-    transformer = RotateTransformer(expressions).walk()
+def rotate(ast):
+    transformer = RotateTransformer(ast).walk()
     return transformer.ast

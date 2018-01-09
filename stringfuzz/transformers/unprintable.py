@@ -52,11 +52,10 @@ def make_unprintable_expression(expression, charmap):
             expression.body[i] = StringLitNode(new_string)
 
 # public API
-def unprintable(s, language):
-    expressions = parse(s, language)
+def unprintable(ast):
     charmap     = make_charmap()
 
-    for expression in expressions:
+    for expression in ast:
         make_unprintable_expression(expression, charmap)
 
-    return expressions
+    return ast

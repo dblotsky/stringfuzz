@@ -122,8 +122,7 @@ class GraftFinder(ASTWalker):
 
 
 # public API
-def graft(s, language):
-    expressions = parse(s, language)
-    finder = GraftFinder(expressions).walk()
-    transformer = GraftTransformer(expressions, finder.pairs).walk()
+def graft(ast):
+    finder = GraftFinder(ast).walk()
+    transformer = GraftTransformer(ast, finder.pairs).walk()
     return transformer.ast

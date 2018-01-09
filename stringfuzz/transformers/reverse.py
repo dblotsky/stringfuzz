@@ -27,7 +27,6 @@ class ReverseTransformer(ASTWalker):
             expr.body = reversed(expr.body)
 
 # public API
-def reverse(s, language):
-    expressions = parse(s, language)
-    transformer = ReverseTransformer(expressions).walk()
+def reverse(ast):
+    transformer = ReverseTransformer(ast).walk()
     return transformer.ast

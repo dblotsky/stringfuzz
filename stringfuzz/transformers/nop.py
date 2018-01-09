@@ -5,6 +5,5 @@ __all__ = [
 ]
 
 # public API
-def nop(s, language):
-    expressions = parse(s, language)
-    return expressions
+def nop(ast):
+    return ast

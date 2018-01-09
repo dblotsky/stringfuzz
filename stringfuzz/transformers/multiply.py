@@ -13,8 +13,6 @@ __all__ = [
     'multiply',
 ]
 
-MAX_FACTOR = 10
-
 class MultiplyTransformer(ASTWalker):
     def __init__(self, ast, factor):
         super(MultiplyTransformer, self).__init__(ast)
@@ -34,8 +32,6 @@ class MultiplyTransformer(ASTWalker):
             literal.value = literal.value * self.factor
 
 # public API
-def multiply(s, language):
-    factor = random.randint(2, MAX_FACTOR)
-    expressions = parse(s, language)
-    transformer = MultiplyTransformer(expressions, factor).walk()
+def multiply(ast, factor):
+    transformer = MultiplyTransformer(ast, factor).walk()
     return transformer.ast
