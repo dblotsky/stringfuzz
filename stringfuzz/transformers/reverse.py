@@ -4,7 +4,6 @@ Reversing every string literal
 
 from stringfuzz.ast import StringLitNode, ConcatNode, ReConcatNode
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.parser import parse
 
 __all__ = [
     'reverse',

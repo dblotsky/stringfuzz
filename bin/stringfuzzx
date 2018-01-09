@@ -13,6 +13,8 @@ from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, trans
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 
+from stringfuzz.transformers.translate import CHARACTER_SETS, DEFAULT_CHARACTER_SET
+
 # constants
 UNPRINTABLE = 'unprintable'
 NOP         = 'nop'
@@ -123,7 +125,15 @@ def main():
 
     # translate transformer
     translate_parser = subparsers.add_parser(TRANSLATE, help='translate transformer')
-
+    translate_parser.add_argument(
+        '--character-set',
+        '-c',
+        dest    = 'character_set',
+        type    = str,
+        choices = CHARACTER_SETS.keys(),
+        default = DEFAULT_CHARACTER_SET,
+        help    = 'character set to permute (default: {})'.format(DEFAULT_CHARACTER_SET)
+    )
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
 

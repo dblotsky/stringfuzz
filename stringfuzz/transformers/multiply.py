@@ -7,7 +7,6 @@ import random
 
 from stringfuzz.ast import StringLitNode, IntLitNode
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.parser import parse
 
 __all__ = [
     'multiply',

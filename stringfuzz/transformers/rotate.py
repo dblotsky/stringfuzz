@@ -4,7 +4,6 @@ import string
 from stringfuzz.ast import *
 from stringfuzz.types import *
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.parser import parse
 
 __all__ = [
     'rotate',

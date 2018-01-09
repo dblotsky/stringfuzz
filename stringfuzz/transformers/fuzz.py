@@ -21,7 +21,6 @@ from stringfuzz.types import *
 from stringfuzz import ALL_CHARS
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
-from stringfuzz.parser import parse
 
 __all__ = [
     'fuzz',
