@@ -61,8 +61,8 @@ def make_re_union(s, w):         return Token('RE_UNION', w)
 # constants
 ALPHABET     = string.digits + string.ascii_letters + string.punctuation
 WHITESPACE   = string.whitespace
-ID_CHAR      = r'[\w._\+\-\*\=%?!$_~&^<>@/\\]'
-SETTING_CHAR = r'[\w._\+\-\*\=%?!$_~&^<>@/]'
+ID_CHAR      = r'[\w._\+\-\*\=%?!$_~&^<>@/|:\\]'
+SETTING_CHAR = r'[\w._\+\-\*\=%?!$_~&^<>@/|:]'
 
 # token lists
 # NOTE:
@@ -136,11 +136,11 @@ SMT_20_TOKENS = [
     (r';[^\n]*', make_whitespace),
     (r'//[^\n]*', make_whitespace),
 
-    # identifiers: can use most characters, but can't start with digits
-    (ID_CHAR + r'(?<!\d)' + ID_CHAR + r'*', make_identifier),
-
     # settings: can use most characters, and start with colons
     (r':' + SETTING_CHAR + r'+', make_setting),
+
+    # identifiers: can use most characters, but can't start with digits
+    (ID_CHAR + r'(?<![\d])' + ID_CHAR + r'*', make_identifier),
 ]
 
 SMT_20_STRING_TOKENS = [
