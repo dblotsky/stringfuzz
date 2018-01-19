@@ -11,22 +11,11 @@ from stringfuzz.ast_walker import ASTWalker
 from stringfuzz import ALL_CHARS
 
 __all__ = [
-    'translate',
-    'CHARACTER_SETS',
-    'DEFAULT_CHARACTER_SET'
+    'translate'
 ]
 
-NON_INTEGERS = 'non-integers' 
-LETTERS      = 'letters'
-ALL_SYMBOLS  = 'all'
-
-DEFAULT_CHARACTER_SET = NON_INTEGERS
-
-CHARACTER_SETS = {
-    NON_INTEGERS: [c for c in ALL_CHARS if not c.isdecimal()],
-    LETTERS:      list(string.ascii_letters),
-    ALL_SYMBOLS:  list(ALL_CHARS)
-}
+WITH_INTEGERS    = list(ALL_CHARS)
+WITHOUT_INTEGERS = [c for c in ALL_CHARS if not c.isdecimal()]
 
 class TranslateTransformer(ASTWalker):
     def __init__(self, ast, character_set):
@@ -48,7 +37,10 @@ class TranslateTransformer(ASTWalker):
             literal.value = literal.value.translate(self.table)
 
 # public API
-def translate(ast, character_set):
-    character_set = CHARACTER_SETS[character_set]
+def translate(ast, integer_flag):
+    if integer_flag:
+        character_set = WITH_INTEGERS
+    else:
+        character_set = WITHOUT_INTEGERS
     transformer = TranslateTransformer(ast, character_set).walk()
     return transformer.ast
