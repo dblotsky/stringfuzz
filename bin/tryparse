@@ -16,7 +16,7 @@ import ctypes
 from collections import deque
 
 from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING, LANGUAGES
-from stringfuzz.scanner import scan_file
+from stringfuzz.scanner import scan
 from stringfuzz.parser import parse_file, parse_tokens
 from stringfuzz.generator import generate
 
@@ -93,9 +93,13 @@ def parse_problem(input_path):
     else:
         language = SMT_20_STRING
 
+    # read in file
+    with open(path, 'r') as file:
+        text = file.read()
+
     # try to scan
     try:
-        tokens = scan_file(input_path, language)
+        tokens = scan(text, language)
     except IndexError as e:
         show_failure('{language:<5} failed scanning {problem}\n{error}'.format(
             path     = input_path,
@@ -109,7 +113,7 @@ def parse_problem(input_path):
     # if scanned, try to parse
     else:
         try:
-            expressions = parse_tokens(tokens, language)
+            expressions = parse_tokens(tokens, language, text)
         except IndexError as e:
             show_failure('{language:<5} failed parsing {path}\n{error}'.format(
                 path     = input_path,

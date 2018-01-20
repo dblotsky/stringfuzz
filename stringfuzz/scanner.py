@@ -13,50 +13,51 @@ __all__ = [
 # data structures
 class Token(object):
 
-    def __init__(self, name, value):
+    def __init__(self, name, value, position):
         self.name = name
         self.value = value
+        self.position = position
 
     def __str__(self):
         return self.value
 
     def __repr__(self):
-        return '{} {!r}'.format(self.name, self.value)
+        return '{} {!r} @ {}'.format(self.name, self.value, self.position)
 
 # token functions
-def make_whitespace(s, w): return Token('WHITESPACE', w)
-def make_identifier(s, w): return Token('IDENTIFIER', w)
-def make_lparen(s, w):     return Token('LPAREN', w)
-def make_rparen(s, w):     return Token('RPAREN', w)
-def make_setting(s, w):    return Token('SETTING', w)
-def make_sort(s, w):       return Token('SORT', w)
-def make_string_lit(s, w): return Token('STRING_LIT', w[1:-1])
-def make_bool_lit(s, w):   return Token('BOOL_LIT', w)
-def make_int_lit(s, w):    return Token('INT_LIT', w)
-def make_sym(s, w):        return Token('SYMBOL', w)
+def make_whitespace(s, w): return Token('WHITESPACE', w,       s.match.start())
+def make_identifier(s, w): return Token('IDENTIFIER', w,       s.match.start())
+def make_lparen(s, w):     return Token('LPAREN',     w,       s.match.start())
+def make_rparen(s, w):     return Token('RPAREN',     w,       s.match.start())
+def make_setting(s, w):    return Token('SETTING',    w,       s.match.start())
+def make_sort(s, w):       return Token('SORT',       w,       s.match.start())
+def make_string_lit(s, w): return Token('STRING_LIT', w[1:-1], s.match.start())
+def make_bool_lit(s, w):   return Token('BOOL_LIT',   w,       s.match.start())
+def make_int_lit(s, w):    return Token('INT_LIT',    w,       s.match.start())
+def make_sym(s, w):        return Token('SYMBOL',     w,       s.match.start())
 
 # specific symbol tokens
-def make_contains(s, w):         return Token('CONTAINS', w)
-def make_concat(s, w):           return Token('CONCAT', w)
-def make_at(s, w):               return Token('AT', w)
-def make_indexof_var_args(s, w): return Token('INDEXOFVAR', w)
-def make_indexof_2_args(s, w):   return Token('INDEXOF', w)
-def make_indexof_3_args(s, w):   return Token('INDEXOF2', w)
-def make_prefixof(s, w):         return Token('PREFIXOF', w)
-def make_suffixof(s, w):         return Token('SUFFIXOF', w)
-def make_replace(s, w):          return Token('REPLACE', w)
-def make_substring(s, w):        return Token('SUBSTRING', w)
-def make_str_from_int(s, w):     return Token('FROM_INT', w)
-def make_str_to_int(s, w):       return Token('TO_INT', w)
-def make_length(s, w):           return Token('LENGTH', w)
-def make_in_re(s, w):            return Token('IN_RE', w)
-def make_str_to_re(s, w):        return Token('STR_TO_RE', w)
-def make_re_allchar(s, w):       return Token('RE_ALLCHAR', w)
-def make_re_concat(s, w):        return Token('RE_CONCAT', w)
-def make_re_star(s, w):          return Token('RE_STAR', w)
-def make_re_plus(s, w):          return Token('RE_PLUS', w)
-def make_re_range(s, w):         return Token('RE_RANGE', w)
-def make_re_union(s, w):         return Token('RE_UNION', w)
+def make_contains(s, w):         return Token('CONTAINS',   w, s.match.start())
+def make_concat(s, w):           return Token('CONCAT',     w, s.match.start())
+def make_at(s, w):               return Token('AT',         w, s.match.start())
+def make_indexof_var_args(s, w): return Token('INDEXOFVAR', w, s.match.start())
+def make_indexof_2_args(s, w):   return Token('INDEXOF',    w, s.match.start())
+def make_indexof_3_args(s, w):   return Token('INDEXOF2',   w, s.match.start())
+def make_prefixof(s, w):         return Token('PREFIXOF',   w, s.match.start())
+def make_suffixof(s, w):         return Token('SUFFIXOF',   w, s.match.start())
+def make_replace(s, w):          return Token('REPLACE',    w, s.match.start())
+def make_substring(s, w):        return Token('SUBSTRING',  w, s.match.start())
+def make_str_from_int(s, w):     return Token('FROM_INT',   w, s.match.start())
+def make_str_to_int(s, w):       return Token('TO_INT',     w, s.match.start())
+def make_length(s, w):           return Token('LENGTH',     w, s.match.start())
+def make_in_re(s, w):            return Token('IN_RE',      w, s.match.start())
+def make_str_to_re(s, w):        return Token('STR_TO_RE',  w, s.match.start())
+def make_re_allchar(s, w):       return Token('RE_ALLCHAR', w, s.match.start())
+def make_re_concat(s, w):        return Token('RE_CONCAT',  w, s.match.start())
+def make_re_star(s, w):          return Token('RE_STAR',    w, s.match.start())
+def make_re_plus(s, w):          return Token('RE_PLUS',    w, s.match.start())
+def make_re_range(s, w):         return Token('RE_RANGE',   w, s.match.start())
+def make_re_union(s, w):         return Token('RE_UNION',   w, s.match.start())
 
 # constants
 ALPHABET     = string.digits + string.ascii_letters + string.punctuation

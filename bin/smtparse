@@ -8,7 +8,7 @@ import sys
 import argparse
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.parser import parse
+from stringfuzz.parser import parse, ParsingError
 
 def main():
 
@@ -39,7 +39,7 @@ def main():
         expressions = parse(args.file.read(), args.language)
 
     # handle errors
-    except IndexError as e:
+    except ParsingError as e:
         print(e, file=sys.stderr)
         return 1
 

@@ -7,12 +7,24 @@ __all__ = [
     'parse',
     'parse_file',
     'parse_tokens',
+    'ParsingError',
 ]
+
+# constants
+MAX_ERROR_SIZE = 200
+UNDERLINE      = '-'
+
+MESSAGE_FORMAT = '''Parsing error on line {number}:
+
+{context}{got_value}
+{underline}^
+{filler}expected {expected}, got {got_name} {got_value!r}'''
 
 # data structures
 class Stream(object):
 
-    def __init__(self, tokens):
+    def __init__(self, tokens, text):
+        self.text = text
         self.current_token = None
         self.stream = (t for t in tokens)
 
@@ -32,7 +44,40 @@ class Stream(object):
         previous = self.current_token
         if self.accept(expected):
             return previous
-        raise IndexError('expected {}, got {!r}'.format(expected, self.current_token))
+        raise ParsingError(expected, self)
+
+class ParsingError(IndexError):
+    def __init__(self, expected, stream):
+
+        # get current token
+        got = stream.current_token
+
+        # get error context
+        error_index = got.position
+        parsed_text = stream.text[0:error_index]
+        context     = parsed_text[-MAX_ERROR_SIZE:]
+
+        if len(context) < len(parsed_text):
+            context = '... ' + context
+
+        # find row and column of error
+        error_row            = parsed_text.count('\n') + 1
+        latest_newline_index = parsed_text.rindex('\n')
+        error_column         = error_index - latest_newline_index - 1
+
+        # compose message
+        message = MESSAGE_FORMAT.format(
+            number    = error_row,
+            context   = context,
+            underline = (UNDERLINE * error_column),
+            filler    = (' ' * error_column),
+            expected  = expected,
+            got_name  = got.name,
+            got_value = got.value,
+        )
+
+        # pass message to superclass
+        super(ParsingError, self).__init__(message)
 
 # parsers
 def get_arg(s):
@@ -70,7 +115,7 @@ def expect_arg(s):
     result = get_arg(s)
 
     if result is None:
-        raise IndexError('expected an argument, got {!r}'.format(s.peek()))
+        raise ParsingError('an argument', s)
 
     return result
 
@@ -241,8 +286,8 @@ def parse_file(path, language):
     with open(path, 'r') as file:
         return parse(file.read(), language)
 
-def parse(string, language):
-    return parse_tokens(scan(string, language), language)
+def parse(text, language):
+    return parse_tokens(scan(text, language), language, text)
 
-def parse_tokens(tokens, language):
-    return get_expressions(Stream(tokens))
+def parse_tokens(tokens, language, text):
+    return get_expressions(Stream(tokens, text))
