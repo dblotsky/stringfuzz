@@ -94,7 +94,7 @@ def parse_problem(input_path):
         language = SMT_20_STRING
 
     # read in file
-    with open(path, 'r') as file:
+    with open(input_path, 'r') as file:
         text = file.read()
 
     # try to scan
