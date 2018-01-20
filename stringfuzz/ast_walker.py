@@ -15,7 +15,7 @@ class ASTWalker(object):
         for expression in self.__ast:
             self.walk_expression(expression)
 
-        return self
+        return self.__ast
 
     # walks
     def walk_expression(self, expression):

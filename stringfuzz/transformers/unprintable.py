@@ -52,7 +52,7 @@ def make_unprintable_expression(expression, charmap):
 
 # public API
 def unprintable(ast):
-    charmap     = make_charmap()
+    charmap = make_charmap()
 
     for expression in ast:
         make_unprintable_expression(expression, charmap)

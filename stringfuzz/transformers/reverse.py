@@ -13,10 +13,6 @@ class ReverseTransformer(ASTWalker):
     def __init__(self, ast):
         super(ReverseTransformer, self).__init__(ast)
 
-    @property
-    def ast(self):
-        return self._ASTWalker__ast
-
     def exit_literal(self, literal):
         if isinstance(literal, StringLitNode):
             literal.value = literal.value[::-1]
@@ -27,5 +23,5 @@ class ReverseTransformer(ASTWalker):
 
 # public API
 def reverse(ast):
-    transformer = ReverseTransformer(ast).walk()
-    return transformer.ast
+    transformed = ReverseTransformer(ast).walk()
+    return transformed

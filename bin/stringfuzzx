@@ -130,6 +130,7 @@ def main():
         default = DEFAULT_INTEGER_FLAG,
         help    = 'Include integers in translation (default: {})'.format(DEFAULT_INTEGER_FLAG)
     )
+    
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
 
@@ -167,7 +168,7 @@ def main():
     transformer_args.pop('random')
     transformer_args.pop('transformer')
 
-    # run the generator with the args
+    # run the transformer with the args
     transformed = transformer(ast, **transformer_args)
 
     # transformers produce ASTs
