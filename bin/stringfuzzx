@@ -11,7 +11,7 @@ import random
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft
 from stringfuzz.generator import generate
-from stringfuzz.parser import parse, ParsingError
+from stringfuzz.parser import parse
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -107,7 +107,7 @@ def main():
     # run transformer
     try:
         transformed = transformer(raw_in, args.input_language)
-    except ParsingError as e:
+    except IndexError as e:
         print(e, file=sys.stderr)
         return 1
 
