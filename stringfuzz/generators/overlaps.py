@@ -29,7 +29,7 @@ def chain_concats(length):
 
     return all_vars, concat
 
-def make_verlaps(num_vars, length_of_consts):
+def make_overlaps(num_vars, length_of_consts):
 
     # check args
     if num_vars < 1:
@@ -63,4 +63,4 @@ def make_verlaps(num_vars, length_of_consts):
 # public API
 def overlaps(*args, **kwargs):
     smt_reset_counters()
-    return make_verlaps(*args, **kwargs)
+    return make_overlaps(*args, **kwargs)

@@ -18,6 +18,7 @@ from stringfuzz.generators import overlaps
 from stringfuzz.generators import lengths
 from stringfuzz.generators import random_text
 from stringfuzz.generators import random_ast
+from stringfuzz.generators import equality
 from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM
 
 # constants
@@ -27,6 +28,7 @@ OVERLAPS    = 'overlaps'
 RANDOM_TEXT = 'random-text'
 RANDOM_AST  = 'random-ast'
 REGEX       = 'regex'
+EQUALITY    = 'equality'
 
 GENERATORS = {
     CONCATS:     concats,
@@ -35,6 +37,7 @@ GENERATORS = {
     RANDOM_TEXT: random_text,
     RANDOM_AST:  random_ast,
     REGEX:       regex,
+    EQUALITY:    equality,
 }
 
 DEPTH_TYPES      = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
@@ -63,10 +66,19 @@ DEFAULT_NUM_CONCATS = 0
 DEFAULT_NUM_OVERLAPPING  = 2
 DEFAULT_LENGTH_OF_CONSTS = 5
 
+DEFAULT_NUM_EQUAL_EXPRESSIONS   = 2
+DEFAULT_TERMS_PER_EXPRESSION    = 5
+DEFAULT_PREFIX_LENGTH           = 5
+DEFAULT_SUFFIX_LENGTH           = 0
+DEFAULT_INFIX_LENGTH            = 3
+DEFAULT_INFIX_PROBABILITY       = 0.5
+DEFAULT_ADD_INFIXES             = False
+DEFAULT_EQUAL_RANDOMISE_LENGTHS = False
+
 DEFAULT_LITERAL_TYPE    = RANDOM_LITERALS
 DEFAULT_MEMBERSHIP_TYPE = MEMBER_IN
 DEFAULT_REGEX_COINCIDE  = False
-DEFAULT_NUM_TERMS       = 3
+DEFAULT_NUM_REGEX_TERMS = 3
 DEFAULT_NUM_REGEXES     = 1
 DEFAULT_REGEX_LIT_MIN   = 1
 DEFAULT_REGEX_LIT_MAX   = 3
@@ -243,6 +255,79 @@ def main():
         help    = 'the length of the constant terms (default: {})'.format(DEFAULT_LENGTH_OF_CONSTS)
     )
 
+    # equality fuzzer
+    equality_parser = subparsers.add_parser(EQUALITY, help='instance with concatenated expressions (of mixed constants and variables) all equal to each other')
+    equality_parser.add_argument(
+        '--num-exprs',
+        '-n',
+        dest    = 'num_expressions',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_EQUAL_EXPRESSIONS,
+        help    = 'number of equal expressions to generate (default: {})'.format(DEFAULT_NUM_EQUAL_EXPRESSIONS)
+    )
+    equality_parser.add_argument(
+        '--num-terms',
+        '-t',
+        dest    = 'num_terms',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_TERMS_PER_EXPRESSION,
+        help    = 'number terms in each expression (default: {})'.format(DEFAULT_TERMS_PER_EXPRESSION)
+    )
+    equality_parser.add_argument(
+        '--prefix-len',
+        '-p',
+        dest    = 'prefix_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_PREFIX_LENGTH,
+        help    = 'length of constant prefix (default: {})'.format(DEFAULT_PREFIX_LENGTH)
+    )
+    equality_parser.add_argument(
+        '--suffix-len',
+        '-s',
+        dest    = 'suffix_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_SUFFIX_LENGTH,
+        help    = 'length of constant suffix (default: {})'.format(DEFAULT_SUFFIX_LENGTH)
+    )
+    equality_parser.add_argument(
+        '--infix-len',
+        '-i',
+        dest    = 'infix_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_INFIX_LENGTH,
+        help    = 'lengths of constant infixes (default: {})'.format(DEFAULT_INFIX_LENGTH)
+    )
+    equality_parser.add_argument(
+        '--infix-chance',
+        '-c',
+        dest    = 'infix_probability',
+        metavar = 'P',
+        type    = float,
+        default = DEFAULT_INFIX_PROBABILITY,
+        help    = 'probability of constant infixes replacing variables (default: {})'.format(DEFAULT_INFIX_PROBABILITY)
+    )
+    equality_parser.add_argument(
+        '--add-infixes',
+        '-m',
+        dest    = 'add_infixes',
+        action  = 'store_true',
+        default = DEFAULT_ADD_INFIXES,
+        help    = 'add constant infixes to expressions with 50%% chance (default: {})'.format(DEFAULT_ADD_INFIXES)
+    )
+    equality_parser.add_argument(
+        '--random-lengths',
+        '-r',
+        dest    = 'randomise_lengths',
+        action  = 'store_true',
+        default = DEFAULT_EQUAL_RANDOMISE_LENGTHS,
+        help    = 'treat all length settings as upper bounds only (default: {})'.format(DEFAULT_EQUAL_RANDOMISE_LENGTHS)
+    )
+
     # regex-pair fuzzer
     regex_parser = subparsers.add_parser(REGEX, help='instance testing one variable for regex membership')
     regex_parser.add_argument(
@@ -277,8 +362,8 @@ def main():
         dest    = 'num_terms',
         metavar = 'N',
         type    = int,
-        default = DEFAULT_NUM_TERMS,
-        help    = 'number of terms in each regex (default: {})'.format(DEFAULT_NUM_TERMS)
+        default = DEFAULT_NUM_REGEX_TERMS,
+        help    = 'number of terms in each regex (default: {})'.format(DEFAULT_NUM_REGEX_TERMS)
     )
     regex_parser.add_argument(
         '--lit-min',
