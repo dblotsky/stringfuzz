@@ -1,10 +1,5 @@
-import random
-import string
-
-from stringfuzz.ast import *
-from stringfuzz.types import *
+from stringfuzz.types import ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.parser import parse
 
 __all__ = [
     'rotate',
@@ -13,10 +8,6 @@ __all__ = [
 class RotateTransformer(ASTWalker):
     def __init__(self, ast):
         super(RotateTransformer, self).__init__(ast)
-
-    @property
-    def ast(self):
-        return self._ASTWalker__ast
 
     def exit_expression(self, expr):
         for uniform in [ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS]:
@@ -38,7 +29,6 @@ class RotateTransformer(ASTWalker):
                         expr.body[i].body = new_body
 
 # public API
-def rotate(s, language):
-    expressions = parse(s, language)
-    transformer = RotateTransformer(expressions).walk()
-    return transformer.ast
+def rotate(ast):
+    transformed = RotateTransformer(ast).walk()
+    return transformed

@@ -16,12 +16,10 @@ to regex +.
 
 import random
 
-from stringfuzz.ast import *
-from stringfuzz.types import *
-from stringfuzz import ALL_CHARS
+from stringfuzz.ast import IntLitNode, StringLitNode
+from stringfuzz.types import REPLACEABLE_OPS
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
-from stringfuzz.parser import parse
 
 __all__ = [
     'fuzz',
@@ -30,10 +28,6 @@ __all__ = [
 class LitTransformer(ASTWalker):
     def __init__(self, ast):
         super(LitTransformer, self).__init__(ast)
-
-    @property
-    def ast(self):
-        return self._ASTWalker__ast
 
     def exit_literal(self, literal):
         if isinstance(literal, IntLitNode):
@@ -65,7 +59,6 @@ class LitTransformer(ASTWalker):
                     expr.body[i] = choice(*expr.body[i].body)
 
 # public API
-def fuzz(s, language):
-    expressions = parse(s, language)
-    transformer = LitTransformer(expressions).walk()
-    return transformer.ast
+def fuzz(ast):
+    transformed = LitTransformer(ast).walk()
+    return transformed

@@ -5,11 +5,9 @@ and swaps them for each type.
 
 import random
 
-from stringfuzz.ast import *
-from stringfuzz.types import *
+from stringfuzz.ast import StringLitNode, BoolLitNode, IntLitNode, StrToReNode
+from stringfuzz.types import STR_RET, INT_RET, BOOL_RET, RX_RET
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.generators import random_text
-from stringfuzz.parser import parse
 
 __all__ = [
     'graft',
@@ -19,10 +17,6 @@ class GraftTransformer(ASTWalker):
     def __init__(self, ast, pairs):
         super(GraftTransformer, self).__init__(ast)
         self.pairs = pairs
-
-    @property
-    def ast(self):
-        return self._ASTWalker__ast
 
     def enter_expression(self, expr):
         for i in range(len(expr.body)):
@@ -122,8 +116,8 @@ class GraftFinder(ASTWalker):
 
 
 # public API
-def graft(s, language):
-    expressions = parse(s, language)
-    finder = GraftFinder(expressions).walk()
-    transformer = GraftTransformer(expressions, finder.pairs).walk()
-    return transformer.ast
+def graft(ast):
+    finder = GraftFinder(ast)
+    finder.walk()
+    transformed = GraftTransformer(ast, finder.pairs).walk()
+    return transformed

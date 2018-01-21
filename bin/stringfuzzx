@@ -9,7 +9,7 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 
@@ -19,18 +19,26 @@ NOP         = 'nop'
 ROTATE      = 'rotate'
 FUZZ        = 'fuzz'
 GRAFT       = 'graft'
+TRANSLATE   = 'translate'
+REVERSE     = 'reverse'
+MULTIPLY    = 'multiply'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
     NOP:         nop,
     ROTATE:      rotate,
     FUZZ:        fuzz,
-    GRAFT:       graft
+    GRAFT:       graft,
+    TRANSLATE:   translate,
+    REVERSE:     reverse,
+    MULTIPLY:    multiply
 }
 
 # defaults
-DEFAULT_SEED   = 0
-DEFAULT_RANDOM = False
+DEFAULT_SEED         = 0
+DEFAULT_RANDOM       = False
+DEFAULT_FACTOR       = 2
+DEFAULT_INTEGER_FLAG = False
 
 def main():
 
@@ -39,7 +47,7 @@ def main():
     global_parser.add_argument(
         '--file',
         '-f',
-        dest    = 'file',
+        dest    = 'input_file',
         metavar = 'F',
         default = sys.stdin,
         type    = argparse.FileType('r'),
@@ -63,12 +71,6 @@ def main():
         default = SMT_25_STRING,
         help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
-    global_parser.add_argument(
-        'transformer',
-        type    = str,
-        choices = TRANSFORMERS.keys(),
-        help    = 'transformations to perform'
-    )
 
     seed_group = global_parser.add_mutually_exclusive_group()
     seed_group.add_argument(
@@ -89,8 +91,60 @@ def main():
         help    = 'seed the random number generator with the current time (default: {})'.format(DEFAULT_RANDOM)
     )
 
+    # get subparsers
+    subparsers = global_parser.add_subparsers(dest='transformer', help='transformer choice')
+    subparsers.required = True
+
+    # fuzz transformer
+    fuzz_parser = subparsers.add_parser(FUZZ, help='fuzz transformer')
+
+    # graft transformer
+    graft_parser = subparsers.add_parser(GRAFT, help='graft transformer')
+
+    # multiply transformer
+    multiply_parser = subparsers.add_parser(MULTIPLY, help='multiply transformer')
+    multiply_parser.add_argument(
+        '--factor',
+        dest    = 'factor',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_FACTOR,
+        help    = 'number to multiply literals by (default: {})'.format(DEFAULT_FACTOR)
+    )
+
+    # nop transformer
+    nop_parser = subparsers.add_parser(NOP, help='nop transformer')
+
+    # reverse transformer
+    reverse_parser = subparsers.add_parser(REVERSE, help='reverse transformer')
+
+    # rotate transformer
+    rotate_parser = subparsers.add_parser(ROTATE, help='rotate transformer')
+
+    # translate transformer
+    translate_parser = subparsers.add_parser(TRANSLATE, help='translate transformer')
+    translate_parser.add_argument(
+        '--integers',
+        dest    = 'integer_flag',
+        action  = 'store_true',
+        default = DEFAULT_INTEGER_FLAG,
+        help    = 'Include integers in translation (default: {})'.format(DEFAULT_INTEGER_FLAG)
+    )
+    
+    # unprintable transformer
+    unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
+
     # parse args
     args = global_parser.parse_args()
+
+    # get the transformer function based on args
+    transformer_name = args.transformer
+    transformer      = TRANSFORMERS[transformer_name]
+
+    # get some flags that will get popped from args before they're used
+    input_file      = args.input_file
+    input_language  = args.input_language
+    output_language = args.output_language
 
     # seed the RNG
     if args.random is True:
@@ -98,22 +152,31 @@ def main():
     else:
         random.seed(args.seed)
 
-    # get transformer
-    transformer = TRANSFORMERS[args.transformer]
-
-    # read input
-    raw_in = args.file.read()
-
-    # run transformer
     try:
-        transformed = transformer(raw_in, args.input_language)
+        # read input
+        raw_in = args.input_file.read()
+        ast    = parse(raw_in, input_language)
     except IndexError as e:
         print(e, file=sys.stderr)
         return 1
 
-    # print putput
-    raw_out = generate(transformed, args.output_language)
-    print(raw_out)
+    # get args as a dict
+    transformer_args = vars(args)
+
+    # pop arguments that are specific to this script because
+    # they shouldn't be passed on to the transformer
+    transformer_args.pop('input_file')
+    transformer_args.pop('input_language')
+    transformer_args.pop('output_language')
+    transformer_args.pop('seed')
+    transformer_args.pop('random')
+    transformer_args.pop('transformer')
+
+    # run the transformer with the args
+    transformed = transformer(ast, **transformer_args)
+
+    # transformers produce ASTs
+    print(generate(transformed, output_language))
 
 if __name__ == '__main__':
     main()

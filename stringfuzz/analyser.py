@@ -106,5 +106,6 @@ class StatsWalker(ASTWalker):
         self.variables.add(variable.name)
 
 def analyse(ast):
-    walker = StatsWalker(ast).walk()
+    walker = StatsWalker(ast)
+    walker.walk()
     return walker.points, walker.variables, walker.literals
