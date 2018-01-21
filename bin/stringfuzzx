@@ -146,15 +146,19 @@ def main():
     input_language  = args.input_language
     output_language = args.output_language
 
-    # read input
-    raw_in = args.input_file.read()
-    ast    = parse(raw_in, input_language)
-
     # seed the RNG
     if args.random is True:
         random.seed()
     else:
         random.seed(args.seed)
+
+    try:
+        # read input
+        raw_in = args.input_file.read()
+        ast    = parse(raw_in, input_language)
+    except IndexError as e:
+        print(e, file=sys.stderr)
+        return 1
 
     # get args as a dict
     transformer_args = vars(args)
