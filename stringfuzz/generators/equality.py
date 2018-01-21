@@ -63,7 +63,7 @@ def make_equality(num_expressions, num_terms, prefix_length, suffix_length, add_
         middle = []
         for i in range(num_terms - 2):
 
-            # if infixes are enabled
+            # if infixes are enabled, add them with the given probability
             if add_infixes is True and randomly_add_infix(infix_probability) is True:
                 new_term = smt_str_lit(random_string(get_length(infix_length, randomise_lengths)))
 
