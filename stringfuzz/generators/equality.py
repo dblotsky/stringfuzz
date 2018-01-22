@@ -45,19 +45,20 @@ def make_equality(num_expressions, num_terms, prefix_length, suffix_length, add_
     # result values
     expressions = []
     variables   = []
-    heads       = []
+
+    # create root variable
+    root = smt_new_var()
+    variables.append(root)
 
     # create expressions
     for i in range(num_expressions):
 
-        # create head, prefix, and suffix
-        head   = smt_new_var()
+        # prefix and suffix
         prefix = smt_str_lit(random_string(get_length(prefix_length, randomise_lengths)))
         suffix = smt_str_lit(random_string(get_length(suffix_length, randomise_lengths)))
 
         # keep track of new variables
-        new_variables = [head]
-        heads.append(head)
+        new_variables = []
 
         # create middle
         middle = []
@@ -77,24 +78,16 @@ def make_equality(num_expressions, num_terms, prefix_length, suffix_length, add_
         # compose full expression
         terms    = [prefix] + middle + [suffix]
         concat   = concat_terms(terms)
-        equality = smt_assert(smt_equal(head, concat))
+        equality = smt_assert(smt_equal(root, concat))
 
         # remember variables and expressions
         variables += new_variables
         expressions.append(equality)
 
-    # finally, create equality between all expressions
-    first_head = heads[0]
-    for other_head in heads[1:]:
-        head_equality = smt_assert(smt_equal(first_head, other_head))
-        expressions.append(head_equality)
-
     # add check sat
     expressions.append(smt_sat())
 
     # create variable declarations
-    # NOTE:
-    #      heads are already present in the list of variables
     declarations = []
     for v in variables:
         declarations.append(smt_declare_var(v))
