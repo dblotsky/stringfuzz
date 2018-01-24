@@ -60,7 +60,7 @@ class StatsWalker(ASTWalker):
         assert len(self.nesting_stack) > 0
         return self.nesting_stack[-1]
 
-    def enter_expression(self, expression):
+    def enter_expression(self, expression, parent):
 
         # push nesting if we're at least one expression deep
         if self.depth > 1:
@@ -87,7 +87,7 @@ class StatsWalker(ASTWalker):
         # increase depth
         self.depth += 1
 
-    def exit_expression(self, expression):
+    def exit_expression(self, expression, parent):
 
         # decrease depth
         self.depth -= 1
@@ -97,11 +97,11 @@ class StatsWalker(ASTWalker):
         self.expr_stack.pop()
         self.nesting_stack.pop()
 
-    def enter_literal(self, literal):
+    def enter_literal(self, literal, parent):
         assert self.point is not None
         self.literals.append(literal)
 
-    def enter_identifier(self, variable):
+    def enter_identifier(self, variable, parent):
         assert self.point is not None
         self.variables.add(variable.name)
 

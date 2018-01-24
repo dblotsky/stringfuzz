@@ -35,10 +35,11 @@ TRANSFORMERS = {
 }
 
 # defaults
-DEFAULT_SEED         = 0
-DEFAULT_RANDOM       = False
-DEFAULT_FACTOR       = 2
-DEFAULT_INTEGER_FLAG = False
+DEFAULT_SEED          = 0
+DEFAULT_RANDOM        = False
+DEFAULT_FACTOR        = 2
+DEFAULT_INTEGER_FLAG  = False
+DEFAULT_RE_RANGE_FLAG = False
 
 def main():
 
@@ -111,7 +112,14 @@ def main():
         default = DEFAULT_FACTOR,
         help    = 'number to multiply literals by (default: {})'.format(DEFAULT_FACTOR)
     )
-
+    multiply_parser.add_argument(
+        '--re-range',
+        dest    = 're_range_flag',
+        action  = 'store_true',
+        default = DEFAULT_RE_RANGE_FLAG,
+        help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_RE_RANGE_FLAG)
+    )
+    
     # nop transformer
     nop_parser = subparsers.add_parser(NOP, help='nop transformer')
 
@@ -130,7 +138,14 @@ def main():
         default = DEFAULT_INTEGER_FLAG,
         help    = 'Include integers in translation (default: {})'.format(DEFAULT_INTEGER_FLAG)
     )
-    
+    translate_parser.add_argument(
+        '--re-range',
+        dest    = 're_range_flag',
+        action  = 'store_true',
+        default = DEFAULT_RE_RANGE_FLAG,
+        help    = 'Include re_range nodes in translation (default: {})'.format(DEFAULT_RE_RANGE_FLAG)
+    )
+
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
 

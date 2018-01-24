@@ -13,51 +13,51 @@ class ASTWalker(object):
     # public API
     def walk(self):
         for expression in self.__ast:
-            self.walk_expression(expression)
+            self.walk_expression(expression, None)
 
         return self.__ast
 
     # walks
-    def walk_expression(self, expression):
+    def walk_expression(self, expression, parent):
 
-        self.enter_expression(expression)
+        self.enter_expression(expression, parent)
 
         for sub_expression in expression.body:
             if isinstance(sub_expression, ExpressionNode):
-                self.walk_expression(sub_expression)
+                self.walk_expression(sub_expression, expression)
 
             if isinstance(sub_expression, IdentifierNode):
-                self.walk_identifier(sub_expression)
+                self.walk_identifier(sub_expression, expression)
 
             if isinstance(sub_expression, LiteralNode):
-                self.walk_literal(sub_expression)
+                self.walk_literal(sub_expression, expression)
 
-        self.exit_expression(expression)
+        self.exit_expression(expression, parent)
 
-    def walk_literal(self, literal):
-        self.enter_literal(literal)
-        self.exit_literal(literal)
+    def walk_literal(self, literal, parent):
+        self.enter_literal(literal, parent)
+        self.exit_literal(literal, parent)
 
-    def walk_identifier(self, identifier):
-        self.enter_identifier(identifier)
-        self.exit_identifier(identifier)
+    def walk_identifier(self, identifier, parent):
+        self.enter_identifier(identifier, parent)
+        self.exit_identifier(identifier, parent)
 
     # enters/exits
-    def enter_expression(self, expression):
+    def enter_expression(self, expression, parent):
         pass
 
-    def exit_expression(self, expression):
+    def exit_expression(self, expression, parent):
         pass
 
-    def enter_literal(self, literal):
+    def enter_literal(self, literal, parent):
         pass
 
-    def exit_literal(self, literal):
+    def exit_literal(self, literal, parent):
         pass
 
-    def enter_identifier(self, identifier):
+    def enter_identifier(self, identifier, parent):
         pass
 
-    def exit_identifier(self, identifier):
+    def exit_identifier(self, identifier, parent):
         pass
 

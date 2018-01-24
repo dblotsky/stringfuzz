@@ -9,7 +9,7 @@ class RotateTransformer(ASTWalker):
     def __init__(self, ast):
         super(RotateTransformer, self).__init__(ast)
 
-    def exit_expression(self, expr):
+    def exit_expression(self, expr, parent):
         for uniform in [ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS]:
             # need at least two top level children
             uniform_expr = [isinstance(expr, C) for C in uniform]

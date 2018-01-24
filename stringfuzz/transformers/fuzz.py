@@ -29,7 +29,7 @@ class LitTransformer(ASTWalker):
     def __init__(self, ast):
         super(LitTransformer, self).__init__(ast)
 
-    def exit_literal(self, literal):
+    def exit_literal(self, literal, parent):
         if isinstance(literal, IntLitNode):
             literal.value = random.randint(-literal.value, literal.value)
         elif isinstance(literal, StringLitNode):
@@ -49,7 +49,7 @@ class LitTransformer(ASTWalker):
                     pass
             literal.value = new_val
     
-    def exit_expression(self, expr):
+    def exit_expression(self, expr, parent):
         for type_list in REPLACEABLE_OPS:
             for i in range(len(expr.body)):
                 # Check if its a replaceable type, if so, randomly replace it
