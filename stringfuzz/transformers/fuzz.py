@@ -20,6 +20,7 @@ from stringfuzz.ast import IntLitNode, StringLitNode
 from stringfuzz.types import REPLACEABLE_OPS
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
+from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'fuzz',
@@ -60,5 +61,6 @@ class LitTransformer(ASTWalker):
 
 # public API
 def fuzz(ast):
+    ast = strip(ast)
     transformed = LitTransformer(ast).walk()
     return transformed

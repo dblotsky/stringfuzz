@@ -8,6 +8,7 @@ import copy
 from stringfuzz.ast import StringLitNode, ReRangeNode
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz import ALL_CHARS
+from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'translate'
@@ -37,6 +38,7 @@ class TranslateTransformer(ASTWalker):
 
 # public API
 def translate(ast, integer_flag, re_range_flag):
+    ast = strip(ast)
     if integer_flag:
         character_set = WITH_INTEGERS
     else:

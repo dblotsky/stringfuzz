@@ -9,7 +9,7 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply, strip
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 
@@ -22,6 +22,7 @@ GRAFT       = 'graft'
 TRANSLATE   = 'translate'
 REVERSE     = 'reverse'
 MULTIPLY    = 'multiply'
+STRIP       = 'strip'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
@@ -31,7 +32,8 @@ TRANSFORMERS = {
     GRAFT:       graft,
     TRANSLATE:   translate,
     REVERSE:     reverse,
-    MULTIPLY:    multiply
+    MULTIPLY:    multiply,
+    STRIP:       strip
 }
 
 # defaults
@@ -149,6 +151,9 @@ def main():
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
 
+    # strip transformer
+    strip_parser = subparsers.add_parser(STRIP, help='strip transformer')
+
     # parse args
     args = global_parser.parse_args()
 
@@ -189,7 +194,7 @@ def main():
 
     # run the transformer with the args
     transformed = transformer(ast, **transformer_args)
-
+    
     # transformers produce ASTs
     print(generate(transformed, output_language))
 

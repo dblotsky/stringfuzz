@@ -1,5 +1,6 @@
 from stringfuzz.types import ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS
 from stringfuzz.ast_walker import ASTWalker
+from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'rotate',
@@ -30,5 +31,6 @@ class RotateTransformer(ASTWalker):
 
 # public API
 def rotate(ast):
+    ast = strip(ast)
     transformed = RotateTransformer(ast).walk()
     return transformed
