@@ -118,7 +118,6 @@ class GraftFinder(ASTWalker):
 
 # public API
 def graft(ast):
-    ast = strip(ast)
     finder = GraftFinder(ast)
     finder.walk()
     transformed = GraftTransformer(ast, finder.pairs).walk()

@@ -9,9 +9,10 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply, strip
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
+from stringfuzz.ast import SettingNode, ExpressionNode
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -22,7 +23,6 @@ GRAFT       = 'graft'
 TRANSLATE   = 'translate'
 REVERSE     = 'reverse'
 MULTIPLY    = 'multiply'
-STRIP       = 'strip'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
@@ -32,8 +32,7 @@ TRANSFORMERS = {
     GRAFT:       graft,
     TRANSLATE:   translate,
     REVERSE:     reverse,
-    MULTIPLY:    multiply,
-    STRIP:       strip
+    MULTIPLY:    multiply
 }
 
 # defaults
@@ -41,7 +40,20 @@ DEFAULT_SEED          = 0
 DEFAULT_RANDOM        = False
 DEFAULT_FACTOR        = 2
 DEFAULT_INTEGER_FLAG  = False
-DEFAULT_RE_RANGE_FLAG = False
+DEFAULT_SKIP_RE_RANGE = True
+
+GET_MODEL = "get-model"
+SET_INFO  = "set-info"
+GET_INFO  = "get-info"
+TO_STRIP  = [GET_MODEL, SET_INFO, GET_INFO]
+
+def is_not_suppressed(expr):
+    if isinstance(expr, SettingNode):
+        return False
+    if isinstance(expr, ExpressionNode):
+        if expr.symbol in TO_STRIP:
+            return False
+    return True
 
 def main():
 
@@ -100,7 +112,13 @@ def main():
 
     # fuzz transformer
     fuzz_parser = subparsers.add_parser(FUZZ, help='fuzz transformer')
-
+    fuzz_parser.add_argument(
+        '--re-range',
+        dest    = 'skip_re_range',
+        action  = 'store_true',
+        default = DEFAULT_SKIP_RE_RANGE,
+        help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
+    )
     # graft transformer
     graft_parser = subparsers.add_parser(GRAFT, help='graft transformer')
 
@@ -116,10 +134,10 @@ def main():
     )
     multiply_parser.add_argument(
         '--re-range',
-        dest    = 're_range_flag',
+        dest    = 'skip_re_range',
         action  = 'store_true',
-        default = DEFAULT_RE_RANGE_FLAG,
-        help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_RE_RANGE_FLAG)
+        default = DEFAULT_SKIP_RE_RANGE,
+        help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
     )
     
     # nop transformer
@@ -142,17 +160,14 @@ def main():
     )
     translate_parser.add_argument(
         '--re-range',
-        dest    = 're_range_flag',
+        dest    = 'skip_re_range',
         action  = 'store_true',
-        default = DEFAULT_RE_RANGE_FLAG,
-        help    = 'Include re_range nodes in translation (default: {})'.format(DEFAULT_RE_RANGE_FLAG)
+        default = DEFAULT_SKIP_RE_RANGE,
+        help    = 'Include re_range nodes in translation (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
     )
 
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
-
-    # strip transformer
-    strip_parser = subparsers.add_parser(STRIP, help='strip transformer')
 
     # parse args
     args = global_parser.parse_args()
@@ -179,6 +194,9 @@ def main():
     except IndexError as e:
         print(e, file=sys.stderr)
         return 1
+
+    # filter out suppressed expressions
+    ast = list(filter(is_not_suppressed, ast))
 
     # get args as a dict
     transformer_args = vars(args)

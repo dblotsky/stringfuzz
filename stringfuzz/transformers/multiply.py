@@ -12,14 +12,14 @@ __all__ = [
 ]
 
 class MultiplyTransformer(ASTWalker):
-    def __init__(self, ast, factor, re_range_flag):
+    def __init__(self, ast, factor, skip_re_range):
         super(MultiplyTransformer, self).__init__(ast)
         self.factor = factor
-        self.re_range_flag = re_range_flag
+        self.skip_re_range = skip_re_range
 
     def exit_literal(self, literal, parent):
         if isinstance(literal, StringLitNode):
-            if isinstance(parent, ReRangeNode) and not self.re_range_flag:
+            if isinstance(parent, ReRangeNode) and self.skip_re_range:
                 return
             new_val = ""
             for char in literal.value:
@@ -29,7 +29,6 @@ class MultiplyTransformer(ASTWalker):
             literal.value = literal.value * self.factor
 
 # public API
-def multiply(ast, factor, re_range_flag):
-    ast = strip(ast)
-    transformed = MultiplyTransformer(ast, factor, re_range_flag).walk()
+def multiply(ast, factor, skip_re_range):
+    transformed = MultiplyTransformer(ast, factor, skip_re_range).walk()
     return transformed

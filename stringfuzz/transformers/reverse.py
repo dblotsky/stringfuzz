@@ -24,6 +24,5 @@ class ReverseTransformer(ASTWalker):
 
 # public API
 def reverse(ast):
-    ast = strip(ast)
     transformed = ReverseTransformer(ast).walk()
     return transformed

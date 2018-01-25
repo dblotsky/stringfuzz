@@ -31,6 +31,5 @@ class RotateTransformer(ASTWalker):
 
 # public API
 def rotate(ast):
-    ast = strip(ast)
     transformed = RotateTransformer(ast).walk()
     return transformed
