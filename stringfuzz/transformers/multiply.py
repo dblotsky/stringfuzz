@@ -5,7 +5,6 @@ every character in a string literal n times for some n
 
 from stringfuzz.ast import StringLitNode, IntLitNode, ReRangeNode
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'multiply',

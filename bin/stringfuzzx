@@ -195,8 +195,10 @@ def main():
         print(e, file=sys.stderr)
         return 1
 
-    # filter out suppressed expressions
-    ast = list(filter(is_not_suppressed, ast))
+    # the nop transformer should not modify anything
+    if not transformer == nop:
+        # filter out suppressed expressions
+        ast = list(filter(is_not_suppressed, ast))
 
     # get args as a dict
     transformer_args = vars(args)

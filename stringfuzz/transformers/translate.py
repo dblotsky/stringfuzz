@@ -8,7 +8,6 @@ import copy
 from stringfuzz.ast import StringLitNode, ReRangeNode
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz import ALL_CHARS
-from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'translate'

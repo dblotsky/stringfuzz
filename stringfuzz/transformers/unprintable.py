@@ -4,7 +4,6 @@ import random
 import string
 
 from stringfuzz.ast import ExpressionNode, StringLitNode
-from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'unprintable',

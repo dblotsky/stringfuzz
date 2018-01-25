@@ -8,7 +8,6 @@ import random
 from stringfuzz.ast import StringLitNode, BoolLitNode, IntLitNode, StrToReNode
 from stringfuzz.types import STR_RET, INT_RET, BOOL_RET, RX_RET
 from stringfuzz.ast_walker import ASTWalker
-from stringfuzz.transformers.strip import strip
 
 __all__ = [
     'graft',
