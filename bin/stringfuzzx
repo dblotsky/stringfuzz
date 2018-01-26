@@ -11,8 +11,8 @@ import random
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
 from stringfuzz.generator import generate
-from stringfuzz.parser import parse
-from stringfuzz.ast import SettingNode, ExpressionNode
+from stringfuzz.parser import parse, ParsingError
+from stringfuzz.ast import SettingNode, ExpressionNode, MetaExpressionNode
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -43,12 +43,13 @@ DEFAULT_INTEGER_FLAG  = False
 DEFAULT_SKIP_RE_RANGE = True
 
 GET_MODEL = "get-model"
-SET_INFO  = "set-info"
 GET_INFO  = "get-info"
-TO_STRIP  = [GET_MODEL, SET_INFO, GET_INFO]
+TO_STRIP  = [GET_MODEL, GET_INFO]
 
-def is_not_suppressed(expr):
+def should_keep(expr):
     if isinstance(expr, SettingNode):
+        return False
+    if isinstance(expr, MetaExpressionNode):
         return False
     if isinstance(expr, ExpressionNode):
         if expr.symbol in TO_STRIP:
@@ -139,7 +140,7 @@ def main():
         default = DEFAULT_SKIP_RE_RANGE,
         help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
     )
-    
+
     # nop transformer
     nop_parser = subparsers.add_parser(NOP, help='nop transformer')
 
@@ -187,18 +188,21 @@ def main():
     else:
         random.seed(args.seed)
 
+    # read input
+    raw_in = args.input_file.read()
+
+    # parse input
     try:
-        # read input
-        raw_in = args.input_file.read()
-        ast    = parse(raw_in, input_language)
-    except IndexError as e:
+        ast = parse(raw_in, input_language)
+    except ParsingError as e:
         print(e, file=sys.stderr)
         return 1
 
     # the nop transformer should not modify anything
     if transformer != nop:
+
         # filter out suppressed expressions
-        ast = list(filter(is_not_suppressed, ast))
+        ast = list(filter(should_keep, ast))
 
     # get args as a dict
     transformer_args = vars(args)
@@ -214,7 +218,7 @@ def main():
 
     # run the transformer with the args
     transformed = transformer(ast, **transformer_args)
-    
+
     # transformers produce ASTs
     print(generate(transformed, output_language))
 
