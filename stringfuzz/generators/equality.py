@@ -2,6 +2,7 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
+from stringfuzz.util import concat_terms_with
 
 __all__ = [
     'equality',
@@ -14,18 +15,6 @@ def get_length(max_length, randomise):
     if randomise is False:
         return max_length
     return random.randint(0, max_length)
-
-def concat_terms(terms):
-
-    # initialise result to the last term (i.e. first in reversed list)
-    reversed_terms = reversed(terms)
-    result         = next(reversed_terms)
-
-    # keep concatenating preceding terms to the result
-    for term in reversed_terms:
-        result = smt_concat(term, result)
-
-    return result
 
 def randomly_add_infix(probability):
     return random.random() < probability
@@ -77,7 +66,7 @@ def make_equality(num_expressions, num_terms, prefix_length, suffix_length, add_
 
         # compose full expression
         terms    = [prefix] + middle + [suffix]
-        concat   = concat_terms(terms)
+        concat   = concat_terms_with(terms, ConcatNode)
         equality = smt_assert(smt_equal(root, concat))
 
         # remember variables and expressions

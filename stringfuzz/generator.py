@@ -56,7 +56,10 @@ def generate_node(node, language):
         return '()'
 
     elif isinstance(node, SettingNode):
-        return node.name
+        return ':{}'.format(node.name)
+
+    elif isinstance(node, MetaDataNode):
+        return node.value
 
     elif isinstance(node, ReAllCharNode):
         if language == SMT_25_STRING:
@@ -76,6 +79,8 @@ def generate_lit(lit, language):
         return str(lit.value).lower()
 
     elif isinstance(lit, IntLitNode):
+        if (lit.value < 0):
+            return '(- {})'.format(lit.value)
         return str(lit.value)
 
     else:
@@ -167,13 +172,13 @@ def generate_expr(e, language):
 
     elif isinstance(e, FromIntNode):
         if language == SMT_25_STRING:
-            components.append('str.from-int')
+            components.append('str.from.int')
         else:
             raise NotSupported(e, language)
 
     elif isinstance(e, ToIntNode):
         if language == SMT_25_STRING:
-            components.append('str.to-int')
+            components.append('str.to.int')
         else:
             raise NotSupported(e, language)
 

@@ -2,6 +2,7 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
+from stringfuzz.util import concat_terms_with
 
 __all__ = [
     'regex',
@@ -58,12 +59,10 @@ def get_char_and_advance():
 def coin_toss():
     return random.choice([True, False])
 
-def make_regex_string():
+def make_regex_string(min_length, max_length):
     global _literal_type
-    global _literal_min
-    global _literal_max
 
-    chosen_length = random.randint(_literal_min, _literal_max)
+    chosen_length = random.randint(min_length, max_length)
 
     # use a fixed-length string of one character, each time using
     # the next character from the alphabet
@@ -79,7 +78,7 @@ def make_regex_string():
 
 def make_random_term(depth):
     if depth == 0:
-        return make_regex_string()
+        return make_regex_string(_literal_min, _literal_max)
 
     subterm = make_random_term(depth - 1)
 
@@ -96,19 +95,9 @@ def make_random_term(depth):
         second_subterm = make_random_term(depth - 1)
         return smt_regex_union(subterm, second_subterm)
 
-def concat_regex_terms(terms):
-    assert len(terms) > 0
-
-    # concat all terms
-    result = terms[0]
-    for term in terms[1:]:
-        result = smt_regex_concat(term, result)
-
-    return result
-
 def make_random_terms(num_terms, depth):
     terms = [make_random_term(depth) for i in range(num_terms)]
-    regex = concat_regex_terms(terms)
+    regex = concat_terms_with(terms, ReConcatNode)
     return regex
 
 def toggle_membership_type(t):

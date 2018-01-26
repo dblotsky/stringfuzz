@@ -11,7 +11,7 @@ import random
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
 from stringfuzz.generator import generate
-from stringfuzz.smt import smt_model
+from stringfuzz.smt import smt_model, smt_string_logic
 
 from stringfuzz.generators import concats, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 from stringfuzz.generators import overlaps
@@ -468,6 +468,9 @@ def main():
 
     # run the generator with the args
     generated = generator(**generator_args)
+
+    # prepend the logic setting
+    generated = [smt_string_logic()] + generated
 
     # the random text generator produces raw text
     if (generator == random_text):

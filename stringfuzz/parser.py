@@ -2,6 +2,7 @@ import re
 
 from stringfuzz.scanner import scan
 from stringfuzz.ast import *
+from stringfuzz.util import concat_terms_with
 
 __all__ = [
     'parse',
@@ -108,8 +109,23 @@ def get_arg(s):
     elif s.accept('SETTING'):
         return SettingNode(arg.value)
 
-    else:
-        return None
+    return None
+
+def get_meta_arg(s):
+    arg = s.peek()
+
+    if (
+        s.accept('BOOL_LIT') or
+        s.accept('INT_LIT') or
+        s.accept('STRING_LIT') or
+        s.accept('IDENTIFIER')
+    ):
+        return MetaDataNode(arg.value)
+
+    elif s.accept('SETTING'):
+        return SettingNode(arg.value)
+
+    return None
 
 def expect_arg(s):
     result = get_arg(s)
@@ -119,7 +135,22 @@ def expect_arg(s):
 
     return result
 
+def expect_args(s, arg_getter=get_arg):
+    body = []
+
+    while True:
+        arg = arg_getter(s)
+
+        # break on no arg
+        if arg is None:
+            break
+
+        body.append(arg)
+
+    return body
+
 def get_expression(s):
+    symbol = s.peek().value
 
     # empty parens case
     if s.accept('RPAREN'):
@@ -127,10 +158,15 @@ def get_expression(s):
 
     # special expression cases
     if s.accept('CONCAT'):
-        a = expect_arg(s)
-        b = expect_arg(s)
+
+        # get args
+        body = expect_args(s)
         s.expect('RPAREN')
-        return ConcatNode(a, b)
+
+        # re-format n-ary concats into binary concats
+        concat = concat_terms_with(body, ConcatNode)
+
+        return concat
 
     elif s.accept('CONTAINS'):
         a = expect_arg(s)
@@ -252,20 +288,14 @@ def get_expression(s):
         s.expect('RPAREN')
         return ReUnionNode(a, b)
 
+    elif s.accept('META_EXPR'):
+        body = expect_args(s, get_meta_arg)
+        s.expect('RPAREN')
+        return MetaExpressionNode(symbol, body)
+
     # expression case
-    body   = []
-    symbol = s.expect('SYMBOL').value
-
-    # consume args
-    while True:
-        arg = get_arg(s)
-
-        # break on no arg
-        if arg is None:
-            break
-
-        body.append(arg)
-
+    s.expect('GENERIC_SYMBOL')
+    body = expect_args(s)
     s.expect('RPAREN')
 
     return ExpressionNode(symbol, body)
