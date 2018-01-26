@@ -196,7 +196,7 @@ def main():
         return 1
 
     # the nop transformer should not modify anything
-    if not transformer == nop:
+    if transformer != nop:
         # filter out suppressed expressions
         ast = list(filter(is_not_suppressed, ast))
 
