@@ -16,7 +16,7 @@ to regex +.
 
 import random
 
-from stringfuzz.ast import IntLitNode, StringLitNode
+from stringfuzz.ast import IntLitNode, StringLitNode, ReRangeNode
 from stringfuzz.types import REPLACEABLE_OPS
 from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.generators import random_text
@@ -26,13 +26,17 @@ __all__ = [
 ]
 
 class LitTransformer(ASTWalker):
-    def __init__(self, ast):
+    def __init__(self, ast, skip_re_range):
         super(LitTransformer, self).__init__(ast)
+        self.skip_re_range = skip_re_range
 
-    def exit_literal(self, literal):
+    def exit_literal(self, literal, parent):
         if isinstance(literal, IntLitNode):
-            literal.value = random.randint(-literal.value, literal.value)
+            # maintain sign of literal
+            literal.value += random.randint(-literal.value, literal.value)
         elif isinstance(literal, StringLitNode):
+            if isinstance(parent, ReRangeNode) and self.skip_re_range:
+                return
             new_val = ""
             for c in literal.value:
                 # With equal probability replace, keep, or delete.
@@ -49,7 +53,7 @@ class LitTransformer(ASTWalker):
                     pass
             literal.value = new_val
     
-    def exit_expression(self, expr):
+    def exit_expression(self, expr, parent):
         for type_list in REPLACEABLE_OPS:
             for i in range(len(expr.body)):
                 # Check if its a replaceable type, if so, randomly replace it
@@ -59,6 +63,6 @@ class LitTransformer(ASTWalker):
                     expr.body[i] = choice(*expr.body[i].body)
 
 # public API
-def fuzz(ast):
-    transformed = LitTransformer(ast).walk()
+def fuzz(ast, skip_re_range):
+    transformed = LitTransformer(ast, skip_re_range).walk()
     return transformed

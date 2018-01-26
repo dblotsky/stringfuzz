@@ -12,6 +12,7 @@ from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse
+from stringfuzz.ast import SettingNode, ExpressionNode
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -35,10 +36,24 @@ TRANSFORMERS = {
 }
 
 # defaults
-DEFAULT_SEED         = 0
-DEFAULT_RANDOM       = False
-DEFAULT_FACTOR       = 2
-DEFAULT_INTEGER_FLAG = False
+DEFAULT_SEED          = 0
+DEFAULT_RANDOM        = False
+DEFAULT_FACTOR        = 2
+DEFAULT_INTEGER_FLAG  = False
+DEFAULT_SKIP_RE_RANGE = True
+
+GET_MODEL = "get-model"
+SET_INFO  = "set-info"
+GET_INFO  = "get-info"
+TO_STRIP  = [GET_MODEL, SET_INFO, GET_INFO]
+
+def is_not_suppressed(expr):
+    if isinstance(expr, SettingNode):
+        return False
+    if isinstance(expr, ExpressionNode):
+        if expr.symbol in TO_STRIP:
+            return False
+    return True
 
 def main():
 
@@ -97,7 +112,13 @@ def main():
 
     # fuzz transformer
     fuzz_parser = subparsers.add_parser(FUZZ, help='fuzz transformer')
-
+    fuzz_parser.add_argument(
+        '--re-range',
+        dest    = 'skip_re_range',
+        action  = 'store_true',
+        default = DEFAULT_SKIP_RE_RANGE,
+        help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
+    )
     # graft transformer
     graft_parser = subparsers.add_parser(GRAFT, help='graft transformer')
 
@@ -111,7 +132,14 @@ def main():
         default = DEFAULT_FACTOR,
         help    = 'number to multiply literals by (default: {})'.format(DEFAULT_FACTOR)
     )
-
+    multiply_parser.add_argument(
+        '--re-range',
+        dest    = 'skip_re_range',
+        action  = 'store_true',
+        default = DEFAULT_SKIP_RE_RANGE,
+        help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
+    )
+    
     # nop transformer
     nop_parser = subparsers.add_parser(NOP, help='nop transformer')
 
@@ -130,7 +158,14 @@ def main():
         default = DEFAULT_INTEGER_FLAG,
         help    = 'Include integers in translation (default: {})'.format(DEFAULT_INTEGER_FLAG)
     )
-    
+    translate_parser.add_argument(
+        '--re-range',
+        dest    = 'skip_re_range',
+        action  = 'store_true',
+        default = DEFAULT_SKIP_RE_RANGE,
+        help    = 'Include re_range nodes in translation (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
+    )
+
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
 
@@ -160,6 +195,11 @@ def main():
         print(e, file=sys.stderr)
         return 1
 
+    # the nop transformer should not modify anything
+    if transformer != nop:
+        # filter out suppressed expressions
+        ast = list(filter(is_not_suppressed, ast))
+
     # get args as a dict
     transformer_args = vars(args)
 
@@ -174,7 +214,7 @@ def main():
 
     # run the transformer with the args
     transformed = transformer(ast, **transformer_args)
-
+    
     # transformers produce ASTs
     print(generate(transformed, output_language))
 

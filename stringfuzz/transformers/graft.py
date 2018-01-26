@@ -18,7 +18,7 @@ class GraftTransformer(ASTWalker):
         super(GraftTransformer, self).__init__(ast)
         self.pairs = pairs
 
-    def enter_expression(self, expr):
+    def enter_expression(self, expr, parent):
         for i in range(len(expr.body)):
             for pair in self.pairs:
                 if expr.body[i] == pair[0]:
@@ -48,7 +48,7 @@ class GraftFinder(ASTWalker):
             pairs.append(self.rx)
         return pairs
 
-    def enter_literal(self, literal):
+    def enter_literal(self, literal, parent):
         replace = random.choice([True, False])
         if isinstance(literal, StringLitNode):
             if self.str[1]:
@@ -69,7 +69,7 @@ class GraftFinder(ASTWalker):
             else:
                 self.int[1] = literal
 
-    def enter_identifier(self, ident):
+    def enter_identifier(self, ident, parent):
         #TODO How to check type of identifiers?
         # if self.str[1]:
         #     if random.random() < 0.5:
@@ -78,7 +78,7 @@ class GraftFinder(ASTWalker):
         #     self.str[1] = ident
         pass
 
-    def enter_expression(self, expr):
+    def enter_expression(self, expr, parent):
         replace = random.choice([True, False])
         if isinstance(expr, StrToReNode):
             # take StrToReNode's to be literals for RX
