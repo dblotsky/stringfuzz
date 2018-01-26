@@ -2,7 +2,7 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
-from stringfuzz.util import concat_terms_with
+from stringfuzz.util import join_terms_with
 
 __all__ = [
     'regex',
@@ -97,7 +97,7 @@ def make_random_term(depth):
 
 def make_random_terms(num_terms, depth):
     terms = [make_random_term(depth) for i in range(num_terms)]
-    regex = concat_terms_with(terms, ReConcatNode)
+    regex = join_terms_with(terms, smt_regex_concat)
     return regex
 
 def toggle_membership_type(t):

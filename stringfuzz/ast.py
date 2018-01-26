@@ -5,16 +5,19 @@ The AST is a list of ASTNodes.
 '''
 
 __all__ = [
-    'ASTNode',
     'LiteralNode',
     'BoolLitNode',
     'IntLitNode',
     'StringLitNode',
-    'SortNode',
+    'AtomicSortNode',
+    'CompoundSortNode',
     'SettingNode',
     'MetaDataNode',
     'IdentifierNode',
-    'ArgsNode',
+    'FunctionDeclarationNode',
+    'FunctionDefinitionNode',
+    'SortedVarNode',
+    'BracketsNode',
     'ExpressionNode',
     'MetaExpressionNode',
     'ConcatNode',
@@ -38,6 +41,10 @@ __all__ = [
     'ReUnionNode',
     'ReAllCharNode'
 ]
+
+# helpers
+def with_spaces(terms):
+    return ' '.join(map(repr, terms))
 
 # data structures
 class ASTNode(object):
@@ -66,11 +73,22 @@ class StringLitNode(LiteralNode):
         return 'StringLit<{!r}>'.format(self.value)
 
 class SortNode(ASTNode):
-    def __init__(self, sort):
-        self.sort = sort
+    pass
+
+class AtomicSortNode(SortNode):
+    def __init__(self, name):
+        self.name = name
 
     def __repr__(self):
-        return 'Sort<{}>'.format(self.sort)
+        return 'Sort<{}>'.format(self.name)
+
+class CompoundSortNode(SortNode):
+    def __init__(self, symbol, sorts):
+        self.symbol = symbol
+        self.sorts = sorts
+
+    def __repr__(self):
+        return 'CSort<{} {}>'.format(self.symbol, with_spaces(self.sorts))
 
 class SettingNode(ASTNode):
     def __init__(self, name):
@@ -93,13 +111,24 @@ class IdentifierNode(ASTNode):
     def __repr__(self):
         return 'Id<{}>'.format(self.name)
 
-class ArgsNode(ASTNode):
+class SortedVarNode(ASTNode):
+    def __init__(self, name, sort):
+        self.name = name
+        self.sort = sort
+
     def __repr__(self):
-        return 'Args<()>'
+        return 'Decl<{} {}>'.format(self.name, self.sort)
 
 class ReAllCharNode(ASTNode):
     def __repr__(self):
         return 'ReAllChar<.>'
+
+class BracketsNode(ASTNode):
+    def __init__(self, body):
+        self.body = body
+
+    def __repr__(self):
+        return '({})'.format(with_spaces(self.body))
 
 class ExpressionNode(ASTNode):
     def __init__(self, symbol, body):
@@ -108,12 +137,12 @@ class ExpressionNode(ASTNode):
         self.body   = body
 
     def __repr__(self):
-        contents = ' '.join(map(repr, [self.symbol] + self.body))
+        contents = with_spaces([self.symbol] + self.body)
         return 'Expr<{}>'.format(contents)
 
 class MetaExpressionNode(ExpressionNode):
     def __repr__(self):
-        contents = ' '.join(map(repr, self.body))
+        contents = with_spaces(self.body)
         return 'Meta<{} {}>'.format(self.symbol, contents)
 
 class SpecificExpression(ExpressionNode):
@@ -121,8 +150,38 @@ class SpecificExpression(ExpressionNode):
         super(SpecificExpression, self).__init__(symbol, body)
 
     def __repr__(self):
-        contents = ' '.join(map(repr, self.body))
+        contents = with_spaces(self.body)
         return '{}<{}>'.format(self.symbol, contents)
+
+class FunctionDeclarationNode(SpecificExpression):
+    def __init__(self, name, signature, return_sort):
+        self.name        = name
+        self.signature   = signature
+        self.return_sort = return_sort
+        super(FunctionDeclarationNode, self).__init__('declare-fun', [name, signature, return_sort])
+
+    def __repr__(self):
+        return 'FunDecl<{}: ({}) -> {}>'.format(
+            self.name,
+            with_spaces(self.signature.body),
+            self.return_sort
+        )
+
+class FunctionDefinitionNode(SpecificExpression):
+    def __init__(self, name, signature, return_sort, definition):
+        self.name        = name
+        self.signature   = signature
+        self.return_sort = return_sort
+        self.definition  = definition
+        super(FunctionDefinitionNode, self).__init__('define-fun', [name, signature, return_sort, definition])
+
+    def __repr__(self):
+        return 'FunDef<{}: ({}) -> {} | {}>'.format(
+            self.name,
+            with_spaces(self.signature.body),
+            self.return_sort,
+            self.definition
+        )
 
 class ConcatNode(SpecificExpression):
     def __init__(self, a, b):

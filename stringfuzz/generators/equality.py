@@ -2,7 +2,7 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
-from stringfuzz.util import concat_terms_with
+from stringfuzz.util import join_terms_with
 
 __all__ = [
     'equality',
@@ -66,7 +66,7 @@ def make_equality(num_expressions, num_terms, prefix_length, suffix_length, add_
 
         # compose full expression
         terms    = [prefix] + middle + [suffix]
-        concat   = concat_terms_with(terms, ConcatNode)
+        concat   = join_terms_with(terms, smt_concat)
         equality = smt_assert(smt_equal(root, concat))
 
         # remember variables and expressions

@@ -2,7 +2,7 @@ import re
 
 from stringfuzz.scanner import scan
 from stringfuzz.ast import *
-from stringfuzz.util import concat_terms_with
+from stringfuzz.util import join_terms_with
 
 __all__ = [
     'parse',
@@ -17,9 +17,9 @@ UNDERLINE      = '-'
 
 MESSAGE_FORMAT = '''Parsing error on line {number}:
 
-{context}{got_value}
+{context}{actual_value}
 {underline}^
-{filler}expected {expected}, got {got_name} {got_value!r}'''
+{filler}expected {expected}, got {actual_type} {actual_value!r}'''
 
 # data structures
 class Stream(object):
@@ -50,11 +50,18 @@ class Stream(object):
 class ParsingError(IndexError):
     def __init__(self, expected, stream):
 
-        # get current token
-        got = stream.current_token
+        # compute actual value
+        actual_token = stream.current_token
+        if actual_token is not None:
+            actual_type  = actual_token.name
+            actual_value = actual_token.value
+            error_index  = actual_token.position
+        else:
+            actual_type  = 'nothing'
+            actual_value = ''
+            error_index  = len(stream.text) - 1
 
         # get error context
-        error_index = got.position
         parsed_text = stream.text[0:error_index]
         context     = parsed_text[-MAX_ERROR_SIZE:]
 
@@ -62,56 +69,64 @@ class ParsingError(IndexError):
             context = '... ' + context
 
         # find row and column of error
-        error_row            = parsed_text.count('\n') + 1
-        latest_newline_index = parsed_text.rindex('\n')
-        error_column         = error_index - latest_newline_index - 1
+        try:
+            latest_newline_index = parsed_text.rindex('\n')
+        except ValueError as e:
+            latest_newline_index = 0
+
+        error_row    = parsed_text.count('\n') + 1
+        error_column = error_index - latest_newline_index - 1
 
         # compose message
         message = MESSAGE_FORMAT.format(
-            number    = error_row,
-            context   = context,
-            underline = (UNDERLINE * error_column),
-            filler    = (' ' * error_column),
-            expected  = expected,
-            got_name  = got.name,
-            got_value = got.value,
+            number       = error_row,
+            context      = context,
+            underline    = (UNDERLINE * error_column),
+            filler       = (' ' * error_column),
+            expected     = expected,
+            actual_type  = actual_type,
+            actual_value = actual_value,
         )
 
         # pass message to superclass
         super(ParsingError, self).__init__(message)
 
 # parsers
-def get_arg(s):
-    arg = s.peek()
+def accept_arg(s):
+    token = s.peek()
 
     # nested expression
     if s.accept('LPAREN'):
-        return get_expression(s)
+        expression = expect_expression(s)
+        s.expect('RPAREN')
+        return expression
 
     # literal
-    elif s.accept('BOOL_LIT'):
-        if arg.value == 'true':
+    if s.accept('BOOL_LIT'):
+        if token.value == 'true':
             return BoolLitNode(True)
-        elif arg.value == 'false':
+        elif token.value == 'false':
             return BoolLitNode(False)
-    elif s.accept('INT_LIT'):
-        return IntLitNode(int(arg.value))
-    elif s.accept('STRING_LIT'):
-        return StringLitNode(arg.value)
+
+    if s.accept('INT_LIT'):
+        return IntLitNode(int(token.value))
+
+    if s.accept('STRING_LIT'):
+        return StringLitNode(token.value)
 
     # others
-    elif s.accept('RE_ALLCHAR'):
+    if s.accept('RE_ALLCHAR'):
         return ReAllCharNode()
-    elif s.accept('IDENTIFIER'):
-        return IdentifierNode(arg.value)
-    elif s.accept('SORT'):
-        return SortNode(arg.value)
-    elif s.accept('SETTING'):
-        return SettingNode(arg.value)
+
+    if s.accept('IDENTIFIER'):
+        return IdentifierNode(token.value)
+
+    if s.accept('SETTING'):
+        return SettingNode(token.value)
 
     return None
 
-def get_meta_arg(s):
+def accept_meta_arg(s):
     arg = s.peek()
 
     if (
@@ -122,183 +137,244 @@ def get_meta_arg(s):
     ):
         return MetaDataNode(arg.value)
 
-    elif s.accept('SETTING'):
+    if s.accept('SETTING'):
         return SettingNode(arg.value)
 
     return None
 
+def expect_identifier(s):
+    token = s.expect('IDENTIFIER')
+    return IdentifierNode(token.value)
+
 def expect_arg(s):
-    result = get_arg(s)
+    result = accept_arg(s)
 
     if result is None:
         raise ParsingError('an argument', s)
 
     return result
 
-def expect_args(s, arg_getter=get_arg):
-    body = []
+def expect_sort(s):
+    result = accept_sort(s)
+
+    if result is None:
+        raise ParsingError('a sort', s)
+
+    return result
+
+def repeat_star(s, getter):
+    terms = []
 
     while True:
-        arg = arg_getter(s)
+        term = getter(s)
 
-        # break on no arg
-        if arg is None:
+        # break on no term
+        if term is None:
             break
 
-        body.append(arg)
+        terms.append(term)
 
-    return body
+    return terms
 
-def get_expression(s):
-    symbol = s.peek().value
+def accept_sort(s):
 
-    # empty parens case
-    if s.accept('RPAREN'):
-        return ArgsNode()
+    # compound sort
+    if s.accept('LPAREN'):
+        symbol = expect_identifier(s)
+        sorts  = [expect_sort(s)]
+        sorts += repeat_star(s, accept_sort)
+        s.expect('RPAREN')
+        return CompoundSortNode(symbol, sorts)
+
+    # atomic sort
+    token = s.peek()
+    if s.accept('IDENTIFIER'):
+        return AtomicSortNode(token.value)
+
+    return None
+
+def accept_sorted_var(s):
+    if s.accept('LPAREN'):
+        name = expect_identifier(s)
+        sort = expect_sort(s)
+        s.expect('RPAREN')
+        return SortedVarNode(name, sort)
+
+    return None
+
+def expect_expression(s):
+
+    # function definition
+    if s.accept('DECLARE_FUN'):
+        name = expect_identifier(s)
+
+        s.expect('LPAREN')
+        signature = repeat_star(s, accept_sort)
+        s.expect('RPAREN')
+
+        return_sort = expect_sort(s)
+
+        return FunctionDeclarationNode(name, BracketsNode(signature), return_sort)
+
+    if s.accept('DEFINE_FUN'):
+        name = expect_identifier(s)
+
+        s.expect('LPAREN')
+        signature = repeat_star(s, accept_sorted_var)
+        s.expect('RPAREN')
+
+        return_sort = expect_sort(s)
+
+        s.expect('LPAREN')
+        body = expect_expression(s)
+        s.expect('RPAREN')
+
+        return FunctionDefinitionNode(name, BracketsNode(signature), return_sort, body)
 
     # special expression cases
     if s.accept('CONCAT'):
 
-        # get args
-        body = expect_args(s)
-        s.expect('RPAREN')
+        # first two args are mandatory
+        a = expect_arg(s)
+        b = expect_arg(s)
+
+        # more args are optional
+        other_args = repeat_star(s, accept_arg)
 
         # re-format n-ary concats into binary concats
-        concat = concat_terms_with(body, ConcatNode)
+        concat = join_terms_with([a, b] + other_args, ConcatNode)
 
         return concat
 
-    elif s.accept('CONTAINS'):
+    if s.accept('CONTAINS'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return ContainsNode(a, b)
 
-    elif s.accept('AT'):
+    if s.accept('AT'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return AtNode(a, b)
 
-    elif s.accept('LENGTH'):
+    if s.accept('LENGTH'):
         a = expect_arg(s)
-        s.expect('RPAREN')
         return LengthNode(a)
 
-    elif s.accept('INDEXOFVAR'):
+    if s.accept('INDEXOFVAR'):
 
         # two arguments are expected
         a = expect_arg(s)
         b = expect_arg(s)
 
         # the third argument may or may not be there
-        c = get_arg(s)
-        s.expect('RPAREN')
+        c = accept_arg(s)
 
         if c is not None:
             return IndexOf2Node(a, b, c)
 
         return IndexOfNode(a, b)
 
-    elif s.accept('INDEXOF'):
+    if s.accept('INDEXOF'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return IndexOfNode(a, b)
 
-    elif s.accept('INDEXOF2'):
+    if s.accept('INDEXOF2'):
         a = expect_arg(s)
         b = expect_arg(s)
         c = expect_arg(s)
-        s.expect('RPAREN')
         return IndexOf2Node(a, b, c)
 
-    elif s.accept('PREFIXOF'):
+    if s.accept('PREFIXOF'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return PrefixOfNode(a, b)
 
-    elif s.accept('SUFFIXOF'):
+    if s.accept('SUFFIXOF'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return SuffixOfNode(a, b)
 
-    elif s.accept('REPLACE'):
+    if s.accept('REPLACE'):
         a = expect_arg(s)
         b = expect_arg(s)
         c = expect_arg(s)
-        s.expect('RPAREN')
         return StringReplaceNode(a, b, c)
 
-    elif s.accept('SUBSTRING'):
+    if s.accept('SUBSTRING'):
         a = expect_arg(s)
         b = expect_arg(s)
         c = expect_arg(s)
-        s.expect('RPAREN')
         return SubstringNode(a, b, c)
 
-    elif s.accept('FROM_INT'):
+    if s.accept('FROM_INT'):
         a = expect_arg(s)
-        s.expect('RPAREN')
         return FromIntNode(a)
 
-    elif s.accept('TO_INT'):
+    if s.accept('TO_INT'):
         a = expect_arg(s)
-        s.expect('RPAREN')
         return ToIntNode(a)
 
-    elif s.accept('IN_RE'):
+    if s.accept('IN_RE'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return InReNode(a, b)
 
-    elif s.accept('STR_TO_RE'):
+    if s.accept('STR_TO_RE'):
         a = expect_arg(s)
-        s.expect('RPAREN')
         return StrToReNode(a)
 
-    elif s.accept('RE_CONCAT'):
+    if s.accept('RE_CONCAT'):
+
+        # first two args are mandatory
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
-        return ReConcatNode(a, b)
 
-    elif s.accept('RE_STAR'):
+        # more args are optional
+        other_args = repeat_star(s, accept_arg)
+
+        # re-format n-ary concats into binary concats
+        concat = join_terms_with([a, b] + other_args, ReConcatNode)
+
+        return concat
+
+    if s.accept('RE_STAR'):
         a = expect_arg(s)
-        s.expect('RPAREN')
         return ReStarNode(a)
 
-    elif s.accept('RE_PLUS'):
+    if s.accept('RE_PLUS'):
         a = expect_arg(s)
-        s.expect('RPAREN')
         return RePlusNode(a)
 
-    elif s.accept('RE_RANGE'):
+    if s.accept('RE_RANGE'):
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
         return ReRangeNode(a, b)
 
-    elif s.accept('RE_UNION'):
+    if s.accept('RE_UNION'):
+
+        # first two args are mandatory
         a = expect_arg(s)
         b = expect_arg(s)
-        s.expect('RPAREN')
-        return ReUnionNode(a, b)
 
-    elif s.accept('META_EXPR'):
-        body = expect_args(s, get_meta_arg)
-        s.expect('RPAREN')
-        return MetaExpressionNode(symbol, body)
+        # more args are optional
+        other_args = repeat_star(s, accept_arg)
 
-    # expression case
-    s.expect('GENERIC_SYMBOL')
-    body = expect_args(s)
-    s.expect('RPAREN')
+        # re-format n-ary concats into binary concats
+        union = join_terms_with([a, b] + other_args, ReUnionNode)
 
-    return ExpressionNode(symbol, body)
+        return union
+
+    token = s.peek()
+    if s.accept('META_EXPR'):
+        body = repeat_star(s, accept_meta_arg)
+        return MetaExpressionNode(token.value, body)
+
+    # generic expression case
+    name = expect_identifier(s)
+    body = repeat_star(s, accept_arg)
+
+    return ExpressionNode(name, body)
 
 def get_expressions(s):
 
@@ -307,7 +383,8 @@ def get_expressions(s):
 
     while s.peek() is not None:
         s.expect('LPAREN')
-        expressions.append(get_expression(s))
+        expressions.append(expect_expression(s))
+        s.expect('RPAREN')
 
     return expressions
 

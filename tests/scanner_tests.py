@@ -29,7 +29,7 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens[0].name, 'LPAREN')
         self.assertEqual(tokens[0].value, '(')
-        self.assertEqual(tokens[1].name, 'GENERIC_SYMBOL')
+        self.assertEqual(tokens[1].name, 'IDENTIFIER')
         self.assertEqual(tokens[1].value, 'check-sat')
         self.assertEqual(tokens[2].name, 'RPAREN')
         self.assertEqual(tokens[2].value, ')')

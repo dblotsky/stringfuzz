@@ -16,9 +16,9 @@ import ctypes
 from collections import deque
 
 from stringfuzz.constants import SMT_20_STRING, SMT_25_STRING, LANGUAGES
-from stringfuzz.scanner import scan
-from stringfuzz.parser import parse_file, parse_tokens
-from stringfuzz.generator import generate
+from stringfuzz.scanner import scan, ScanningError
+from stringfuzz.parser import parse_file, parse_tokens, ParsingError
+from stringfuzz.generator import generate, NotSupported
 
 # constants
 DEFAULT_NUM_WORKERS = 8
@@ -62,7 +62,7 @@ def is_smt25(file_path):
     return any(pattern in file_path for pattern in SMT_25_PATTERNS)
 
 # functions
-def consumer(q, num_done, i):
+def consumer(q, num_done, i, crash):
 
     # run forever
     while True:
@@ -76,7 +76,20 @@ def consumer(q, num_done, i):
 
         # go through problem batch
         for problem_path in batch:
-            parse_problem(problem_path)
+
+            try:
+                parse_problem(problem_path)
+
+            # on uncaught exceptions
+            except Exception as e:
+
+                # print stack trace
+                with io_lock:
+                    traceback.print_exc()
+
+                # signal crash to parent process
+                with crash.get_lock():
+                    crash.value = 1
 
             # signal completion
             with num_done.get_lock():
@@ -100,44 +113,35 @@ def parse_problem(input_path):
     # try to scan
     try:
         tokens = scan(text, language)
-    except IndexError as e:
+    except ScanningError as e:
         show_failure('{language:<5} failed scanning {problem}\n{error}'.format(
             path     = input_path,
             language = language,
             error    = e
         ))
-    except Exception as e:
-        with io_lock:
-            traceback.print_exc()
 
     # if scanned, try to parse
     else:
         try:
             expressions = parse_tokens(tokens, language, text)
-        except IndexError as e:
+        except ParsingError as e:
             show_failure('{language:<5} failed parsing {path}\n{error}'.format(
                 path     = input_path,
                 language = language,
                 error    = e
             ))
-        except Exception as e:
-            with io_lock:
-                traceback.print_exc()
 
         # if parsed, try to generate
         else:
             for output_language in [SMT_25_STRING, SMT_20_STRING]:
                 try:
                     translated = generate(expressions, output_language)
-                except ValueError as e:
+                except NotSupported as e:
                     show_failure('{language:<5} failed generating {path}\n{error}'.format(
                         path     = input_path,
                         language = language,
                         error    = e
                     ))
-                except Exception as e:
-                    with io_lock:
-                        traceback.print_exc();
 
     # measure run time
     run_time = now() - start_time
@@ -215,6 +219,7 @@ def main():
 
     # create shared values
     num_done = mp.Value(ctypes.c_ulong, 0)
+    crash    = mp.Value(ctypes.c_bool, 0)
     q        = mp.Queue()
 
     # populate queue
@@ -232,7 +237,7 @@ def main():
         q.put_nowait(POISON_PILL)
 
     # create workers
-    workers = [mp.Process(target=consumer, args=(q, num_done, i)) for i in range(num_workers)]
+    workers = [mp.Process(target=consumer, args=(q, num_done, i, crash)) for i in range(num_workers)]
 
     # start workers
     for worker in workers:
@@ -260,6 +265,15 @@ def main():
 
         # sleep for a frame
         time.sleep(FRAME_DURATION)
+
+        # check for crash condition
+        if crash.value != 0:
+
+            # terminate workers
+            for worker in workers:
+                worker.terminate()
+
+            exit(1)
 
     # wait for the workers to finish
     for worker in workers:
