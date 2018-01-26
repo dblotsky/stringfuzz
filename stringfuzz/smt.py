@@ -35,6 +35,9 @@ __all__ = [
     'smt_and',
     'smt_or',
     'smt_not',
+    'smt_string_logic',
+    'smt_is_sat',
+    'smt_is_unsat',
 ]
 
 # constants
@@ -144,3 +147,15 @@ def smt_sat():
 
 def smt_model():
     return ExpressionNode('get-model', [])
+
+def smt_status(status):
+    return MetaExpressionNode('set-info', [SettingNode('status'), MetaDataNode(status)])
+
+def smt_is_sat():
+    return smt_status('sat')
+
+def smt_is_unsat():
+    return smt_status('unsat')
+
+def smt_string_logic():
+    return MetaExpressionNode('set-logic', [IdentifierNode('QF_S')])

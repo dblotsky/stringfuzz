@@ -25,18 +25,19 @@ class Token(object):
         return '{} {!r} @ {}'.format(self.name, self.value, self.position)
 
 # token functions
-def make_whitespace(s, w): return Token('WHITESPACE', w,       s.match.start())
-def make_identifier(s, w): return Token('IDENTIFIER', w,       s.match.start())
-def make_lparen(s, w):     return Token('LPAREN',     w,       s.match.start())
-def make_rparen(s, w):     return Token('RPAREN',     w,       s.match.start())
-def make_setting(s, w):    return Token('SETTING',    w,       s.match.start())
-def make_sort(s, w):       return Token('SORT',       w,       s.match.start())
-def make_string_lit(s, w): return Token('STRING_LIT', w[1:-1], s.match.start())
-def make_bool_lit(s, w):   return Token('BOOL_LIT',   w,       s.match.start())
-def make_int_lit(s, w):    return Token('INT_LIT',    w,       s.match.start())
-def make_sym(s, w):        return Token('SYMBOL',     w,       s.match.start())
+def make_whitespace(s, w): return Token('WHITESPACE',     w,       s.match.start())
+def make_identifier(s, w): return Token('IDENTIFIER',     w,       s.match.start())
+def make_lparen(s, w):     return Token('LPAREN',         w,       s.match.start())
+def make_rparen(s, w):     return Token('RPAREN',         w,       s.match.start())
+def make_setting(s, w):    return Token('SETTING',        w,       s.match.start())
+def make_sort(s, w):       return Token('SORT',           w,       s.match.start())
+def make_string_lit(s, w): return Token('STRING_LIT',     w[1:-1], s.match.start())
+def make_bool_lit(s, w):   return Token('BOOL_LIT',       w,       s.match.start())
+def make_int_lit(s, w):    return Token('INT_LIT',        w,       s.match.start())
+def make_sym(s, w):        return Token('GENERIC_SYMBOL', w,       s.match.start())
 
 # specific symbol tokens
+def make_meta_expr(s, w):        return Token('META_EXPR',   w, s.match.start())
 def make_contains(s, w):         return Token('CONTAINS',   w, s.match.start())
 def make_concat(s, w):           return Token('CONCAT',     w, s.match.start())
 def make_at(s, w):               return Token('AT',         w, s.match.start())
@@ -83,9 +84,9 @@ SMT_20_TOKENS = [
     (r'or',  make_sym),
 
     # commands
-    (r'set-logic',        make_sym),
-    (r'set-option',       make_sym),
-    (r'set-info',         make_sym),
+    (r'set-logic',        make_meta_expr),
+    (r'set-option',       make_meta_expr),
+    (r'set-info',         make_meta_expr),
     (r'declare-sort',     make_sym),
     (r'define-sort',      make_sym),
     (r'declare-fun',      make_sym),
@@ -205,8 +206,8 @@ SMT_25_STRING_TOKENS = [
     (r're\.all',       make_re_allchar),
 
     # integer
-    (r'str\.from-int', make_str_from_int),
-    (r'str\.to-int',   make_str_to_int),
+    (r'str\.from\.int', make_str_from_int),
+    (r'str\.to\.int',   make_str_to_int),
 
     # quotes
     (r'"(?:""|[^"])*"', make_string_lit),

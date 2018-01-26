@@ -12,9 +12,11 @@ __all__ = [
     'StringLitNode',
     'SortNode',
     'SettingNode',
+    'MetaDataNode',
     'IdentifierNode',
     'ArgsNode',
     'ExpressionNode',
+    'MetaExpressionNode',
     'ConcatNode',
     'ContainsNode',
     'AtNode',
@@ -77,6 +79,13 @@ class SettingNode(ASTNode):
     def __repr__(self):
         return 'Setting<{}>'.format(self.name)
 
+class MetaDataNode(ASTNode):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return 'MetaData<{}>'.format(self.value)
+
 class IdentifierNode(ASTNode):
     def __init__(self, name):
         self.name = name
@@ -101,6 +110,11 @@ class ExpressionNode(ASTNode):
     def __repr__(self):
         contents = ' '.join(map(repr, [self.symbol] + self.body))
         return 'Expr<{}>'.format(contents)
+
+class MetaExpressionNode(ExpressionNode):
+    def __repr__(self):
+        contents = ' '.join(map(repr, self.body))
+        return 'Meta<{} {}>'.format(self.symbol, contents)
 
 class SpecificExpression(ExpressionNode):
     def __init__(self, symbol, body):
