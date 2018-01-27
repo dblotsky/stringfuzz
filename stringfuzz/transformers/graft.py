@@ -27,8 +27,9 @@ class GraftTransformer(ASTWalker):
                     expr.body[i] = pair[0]
 
 class GraftFinder(ASTWalker):
-    def __init__(self, ast):
+    def __init__(self, ast, skip_str_to_re):
         super(GraftFinder, self).__init__(ast)
+        self.skip_str_to_re = skip_str_to_re
         #            expr, lit
         self.str  = [None, None]
         self.bool = [None, None]
@@ -51,6 +52,8 @@ class GraftFinder(ASTWalker):
     def enter_literal(self, literal, parent):
         replace = random.choice([True, False])
         if isinstance(literal, StringLitNode):
+            if isinstance(parent, StrToReNode) and self.skip_str_to_re:
+                return
             if self.str[1]:
                 if replace:
                     self.str[1] = literal
@@ -116,8 +119,8 @@ class GraftFinder(ASTWalker):
 
 
 # public API
-def graft(ast):
-    finder = GraftFinder(ast)
+def graft(ast, skip_str_to_re):
+    finder = GraftFinder(ast, skip_str_to_re)
     finder.walk()
     transformed = GraftTransformer(ast, finder.pairs).walk()
     return transformed

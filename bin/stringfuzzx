@@ -36,11 +36,12 @@ TRANSFORMERS = {
 }
 
 # defaults
-DEFAULT_SEED          = 0
-DEFAULT_RANDOM        = False
-DEFAULT_FACTOR        = 2
-DEFAULT_INTEGER_FLAG  = False
-DEFAULT_SKIP_RE_RANGE = True
+DEFAULT_SEED           = 0
+DEFAULT_RANDOM         = False
+DEFAULT_FACTOR         = 2
+DEFAULT_INTEGER_FLAG   = False
+DEFAULT_SKIP_RE_RANGE  = True
+DEFAULT_SKIP_STR_TO_RE = True
 
 GET_MODEL = "get-model"
 GET_INFO  = "get-info"
@@ -122,7 +123,14 @@ def main():
     )
     # graft transformer
     graft_parser = subparsers.add_parser(GRAFT, help='graft transformer')
-
+    graft_parser.add_argument(
+        '--str-to-re',
+        dest    = 'skip_str_to_re',
+        action  = 'store_false',
+        default = DEFAULT_SKIP_STR_TO_RE,
+        help    = 'Include str_to_re nodes in grafting (default: {})'.format(DEFAULT_SKIP_STR_TO_RE)
+    )
+    
     # multiply transformer
     multiply_parser = subparsers.add_parser(MULTIPLY, help='multiply transformer')
     multiply_parser.add_argument(
