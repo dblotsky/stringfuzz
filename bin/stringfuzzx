@@ -9,7 +9,7 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply, merge
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse, ParsingError
 from stringfuzz.ast import SettingNode, ExpressionNode, MetaExpressionNode
@@ -23,6 +23,7 @@ GRAFT       = 'graft'
 TRANSLATE   = 'translate'
 REVERSE     = 'reverse'
 MULTIPLY    = 'multiply'
+MERGE       = 'merge'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
@@ -32,7 +33,8 @@ TRANSFORMERS = {
     GRAFT:       graft,
     TRANSLATE:   translate,
     REVERSE:     reverse,
-    MULTIPLY:    multiply
+    MULTIPLY:    multiply,
+    MERGE:       merge
 }
 
 # defaults
@@ -41,15 +43,19 @@ DEFAULT_RANDOM        = False
 DEFAULT_FACTOR        = 2
 DEFAULT_INTEGER_FLAG  = False
 DEFAULT_SKIP_RE_RANGE = True
+DEFAULT_RENAME_IDS    = False
 
 GET_MODEL = "get-model"
 GET_INFO  = "get-info"
+SET_LOGIC = "set-logic"
 TO_STRIP  = [GET_MODEL, GET_INFO]
 
 def should_keep(expr):
     if isinstance(expr, SettingNode):
         return False
     if isinstance(expr, MetaExpressionNode):
+        if expr.symbol == SET_LOGIC:
+            return True
         return False
     if isinstance(expr, ExpressionNode):
         if expr.symbol in TO_STRIP:
@@ -170,6 +176,34 @@ def main():
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
 
+    # merge transformer
+    merge_parser = subparsers.add_parser(MERGE, help='merge transformer')
+    merge_parser.add_argument(
+        '--file2',
+        '-f2',
+        required = True,
+        dest     = 'second_file',
+        metavar  = 'F',
+        type     = argparse.FileType('r'),
+        help     = 'second input file'
+    )
+    merge_parser.add_argument(
+        '--in-lang2',
+        '-i2',
+        dest    = 'second_input_language',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'second input language (default: {})'.format(SMT_25_STRING)
+    )
+    merge_parser.add_argument(
+        '--rename',
+        dest    = 'rename_ids',
+        action  = 'store_true',
+        default = DEFAULT_RENAME_IDS,
+        help    = 'Rename identifiers to avoid conflicts (default: {})'.format(DEFAULT_RENAME_IDS)
+    )
+
     # parse args
     args = global_parser.parse_args()
 
@@ -188,8 +222,11 @@ def main():
     else:
         random.seed(args.seed)
 
+    # get args as a dict
+    transformer_args = vars(args)
+
     # read input
-    raw_in = args.input_file.read()
+    raw_in = input_file.read()
 
     # parse input
     try:
@@ -198,14 +235,28 @@ def main():
         print(e, file=sys.stderr)
         return 1
 
+    if transformer == merge:
+        # read second input
+        second_file = transformer_args['second_file']
+        second_input_language = transformer_args['second_input_language']
+        # pop arguments that shouldn't be passed on to the transformer
+        transformer_args.pop('second_file')
+        transformer_args.pop('second_input_language')
+
+        second_raw_in = second_file.read()
+
+        # parse second input
+        try:
+            second_ast = parse(second_raw_in, second_input_language)
+            transformer_args['second_ast'] = list(filter(should_keep, second_ast))
+        except ParsingError as e:
+            print(e, file=sys.stderr)
+            return 1
+
     # the nop transformer should not modify anything
     if transformer != nop:
-
         # filter out suppressed expressions
         ast = list(filter(should_keep, ast))
-
-    # get args as a dict
-    transformer_args = vars(args)
 
     # pop arguments that are specific to this script because
     # they shouldn't be passed on to the transformer
