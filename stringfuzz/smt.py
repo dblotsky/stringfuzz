@@ -80,31 +80,31 @@ def smt_int_lit(value):
     return IntLitNode(value)
 
 def smt_assert(exp):
-    return ExpressionNode('assert', [exp])
+    return ExpressionNode(IdentifierNode('assert'), [exp])
 
 def smt_and(a, b):
-    return ExpressionNode('and', [a, b])
+    return ExpressionNode(IdentifierNode('and'), [a, b])
 
 def smt_or(a, b):
-    return ExpressionNode('or', [a, b])
+    return ExpressionNode(IdentifierNode('or'), [a, b])
 
 def smt_not(a):
-    return ExpressionNode('not', [a])
+    return ExpressionNode(IdentifierNode('not'), [a])
 
 def smt_equal(a, b):
-    return ExpressionNode('=', [a, b])
+    return ExpressionNode(IdentifierNode('='), [a, b])
 
 def smt_gt(a, b):
-    return ExpressionNode('>', [a, b])
+    return ExpressionNode(IdentifierNode('>'), [a, b])
 
 def smt_lt(a, b):
-    return ExpressionNode('<', [a, b])
+    return ExpressionNode(IdentifierNode('<'), [a, b])
 
 def smt_gte(a, b):
-    return ExpressionNode('>=', [a, b])
+    return ExpressionNode(IdentifierNode('>='), [a, b])
 
 def smt_lte(a, b):
-    return ExpressionNode('<=', [a, b])
+    return ExpressionNode(IdentifierNode('<='), [a, b])
 
 def smt_concat(a, b):
     return ConcatNode(a, b)
@@ -137,19 +137,19 @@ def smt_regex_union(a, b):
     return ReUnionNode(a, b)
 
 def smt_declare_var(identifier):
-    return ExpressionNode('declare-fun', [identifier, ArgsNode(), SortNode('String')])
+    return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode('String'))
 
 def smt_declare_const(identifier):
-    return ExpressionNode('declare-const', [identifier, SortNode('String')])
+    return ExpressionNode(IdentifierNode('declare-const'), [identifier, AtomicSortNode('String')])
 
 def smt_sat():
-    return ExpressionNode('check-sat', [])
+    return ExpressionNode(IdentifierNode('check-sat'), [])
 
 def smt_model():
-    return ExpressionNode('get-model', [])
+    return ExpressionNode(IdentifierNode('get-model'), [])
 
 def smt_status(status):
-    return MetaExpressionNode('set-info', [SettingNode('status'), MetaDataNode(status)])
+    return MetaExpressionNode(IdentifierNode('set-info'), [SettingNode('status'), MetaDataNode(status)])
 
 def smt_is_sat():
     return smt_status('sat')
@@ -158,4 +158,4 @@ def smt_is_unsat():
     return smt_status('unsat')
 
 def smt_string_logic():
-    return MetaExpressionNode('set-logic', [IdentifierNode('QF_S')])
+    return MetaExpressionNode(IdentifierNode('set-logic'), [IdentifierNode('QF_S')])

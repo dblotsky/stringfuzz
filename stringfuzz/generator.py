@@ -7,6 +7,7 @@ from stringfuzz.ast import *
 __all__ = [
     'generate',
     'generate_file',
+    'NotSupported',
 ]
 
 # exceptions
@@ -43,48 +44,55 @@ def generate_node(node, language):
     if isinstance(node, ExpressionNode):
         return generate_expr(node, language)
 
-    elif isinstance(node, LiteralNode):
+    if isinstance(node, SortedVarNode):
+        return '({} {})'.format(generate_node(node.name, language), generate_node(node.sort, language))
+
+    if isinstance(node, LiteralNode):
         return generate_lit(node, language)
 
-    elif isinstance(node, IdentifierNode):
+    if isinstance(node, IdentifierNode):
         return node.name
 
-    elif isinstance(node, SortNode):
-        return node.sort
+    if isinstance(node, AtomicSortNode):
+        return node.name
 
-    elif isinstance(node, ArgsNode):
-        return '()'
+    if isinstance(node, CompoundSortNode):
+        return '({} {})'.format(generate_node(node.symbol, language), ' '.join(generate_node(s, language) for s in node.sorts))
 
-    elif isinstance(node, SettingNode):
-        return ':{}'.format(node.name)
+    if isinstance(node, BracketsNode):
+        return '({})'.format(' '.join(generate_node(s, language) for s in node.body))
 
-    elif isinstance(node, MetaDataNode):
+    if isinstance(node, SettingNode):
+        return '{}'.format(generate_node(node.name, language))
+
+    if isinstance(node, MetaDataNode):
         return node.value
 
-    elif isinstance(node, ReAllCharNode):
+    if isinstance(node, ReAllCharNode):
         if language == SMT_25_STRING:
             return 're.allchar'
         else:
             raise NotSupported(node, language)
 
+    if isinstance(node, str):
+        return node
+
     # error out on all others
-    else:
-        raise NotImplementedError('no generator for {}'.format(type(node)))
+    raise NotImplementedError('no generator for {}'.format(type(node)))
 
 def generate_lit(lit, language):
     if isinstance(lit, StringLitNode):
         return encode_string(lit.value, language)
 
-    elif isinstance(lit, BoolLitNode):
+    if isinstance(lit, BoolLitNode):
         return str(lit.value).lower()
 
-    elif isinstance(lit, IntLitNode):
+    if isinstance(lit, IntLitNode):
         if (lit.value < 0):
             return '(- {})'.format(lit.value)
         return str(lit.value)
 
-    else:
-        raise NotImplementedError('unknown literal type {!r}'.format(lit))
+    raise NotImplementedError('unknown literal type {!r}'.format(lit))
 
 def generate_expr(e, language):
     components = []
@@ -240,10 +248,10 @@ def generate_expr(e, language):
 
     # all other expressions
     else:
-        components.append(e.symbol)
+        components.append(generate_node(e.symbol, language))
 
     # generate args
-    components.extend(generate_node(node, language) for node in e.body)
+    components.extend(generate_node(n, language) for n in e.body)
 
     return '({})'.format(' '.join(components))
 
@@ -253,4 +261,4 @@ def generate_file(ast, language, path):
         file.write(generate(ast, language))
 
 def generate(ast, language):
-    return '\n'.join(generate_expr(e, language) for e in ast)
+    return '\n'.join(generate_node(e, language) for e in ast)

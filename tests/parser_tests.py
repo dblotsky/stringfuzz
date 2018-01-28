@@ -22,7 +22,7 @@ class TestParser(unittest.TestCase):
     def test_trivial(self):
         expressions = parse('(check-sat)', SMT_20)
         self.assertEqual(len(expressions), 1)
-        self.assertEqual(expressions[0].symbol, 'check-sat')
+        self.assertEqual(expressions[0].symbol.name, 'check-sat')
         self.assertListEqual(expressions[0].body, [])
 
     def test_simple_smt_20(self):
@@ -36,14 +36,14 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(expressions[0].symbol, 'declare-fun')
         self.assertEqual(expressions[0].body[0].name, 'X')
-        self.assertEqual(expressions[0].body[2].sort, 'String')
+        self.assertEqual(expressions[0].body[2].name, 'String')
 
-        self.assertEqual(expressions[1].symbol, 'assert')
-        self.assertEqual(expressions[1].body[0].symbol, '=')
+        self.assertEqual(expressions[1].symbol.name, 'assert')
+        self.assertEqual(expressions[1].body[0].symbol.name, '=')
         self.assertEqual(expressions[1].body[0].body[0].name, 'X')
         self.assertEqual(expressions[1].body[0].body[1].value, 'solution')
 
-        self.assertEqual(expressions[2].symbol, 'check-sat')
+        self.assertEqual(expressions[2].symbol.name, 'check-sat')
 
     def test_simple_smt_25(self):
         expressions = parse('''
@@ -56,14 +56,14 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(expressions[0].symbol, 'declare-fun')
         self.assertEqual(expressions[0].body[0].name, 'X')
-        self.assertEqual(expressions[0].body[2].sort, 'String')
+        self.assertEqual(expressions[0].body[2].name, 'String')
 
-        self.assertEqual(expressions[1].symbol, 'assert')
-        self.assertEqual(expressions[1].body[0].symbol, '=')
+        self.assertEqual(expressions[1].symbol.name, 'assert')
+        self.assertEqual(expressions[1].body[0].symbol.name, '=')
         self.assertEqual(expressions[1].body[0].body[0].name, 'X')
         self.assertEqual(expressions[1].body[0].body[1].value, 'solution')
 
-        self.assertEqual(expressions[2].symbol, 'check-sat')
+        self.assertEqual(expressions[2].symbol.name, 'check-sat')
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,11 +1,11 @@
 from stringfuzz.ast import ConcatNode, ReConcatNode
 
 __all__ = [
-    'concat_terms_with',
+    'join_terms_with',
 ]
 
 # public API
-def concat_terms_with(terms, concatenator):
+def join_terms_with(terms, concatenator):
     assert len(terms) > 0
 
     # initialise result to the last term (i.e. first in reversed list)

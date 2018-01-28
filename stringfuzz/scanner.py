@@ -6,11 +6,15 @@ from stringfuzz.constants import *
 __all__ = [
     'scan',
     'scan_file',
+    'ScanningError',
     'ALPHABET',
     'WHITESPACE',
 ]
 
 # data structures
+class ScanningError(ValueError):
+    pass
+
 class Token(object):
 
     def __init__(self, name, value, position):
@@ -24,41 +28,59 @@ class Token(object):
     def __repr__(self):
         return '{} {!r} @ {}'.format(self.name, self.value, self.position)
 
+# helpers
+def strip_quotes(string_literal):
+    return string_literal[1:-1]
+
+def unescape(string_literal):
+    return string_literal.encode().decode('unicode_escape')
+
+def replace_double_quotes(string_literal):
+    return string_literal.replace("\"\"", "\"")
+
 # token functions
-def make_whitespace(s, w): return Token('WHITESPACE',     w,       s.match.start())
-def make_identifier(s, w): return Token('IDENTIFIER',     w,       s.match.start())
-def make_lparen(s, w):     return Token('LPAREN',         w,       s.match.start())
-def make_rparen(s, w):     return Token('RPAREN',         w,       s.match.start())
-def make_setting(s, w):    return Token('SETTING',        w,       s.match.start())
-def make_sort(s, w):       return Token('SORT',           w,       s.match.start())
-def make_string_lit(s, w): return Token('STRING_LIT',     w[1:-1], s.match.start())
-def make_bool_lit(s, w):   return Token('BOOL_LIT',       w,       s.match.start())
-def make_int_lit(s, w):    return Token('INT_LIT',        w,       s.match.start())
-def make_sym(s, w):        return Token('GENERIC_SYMBOL', w,       s.match.start())
+def make_whitespace(s, w): return Token('WHITESPACE', w,       s.match.start())
+def make_identifier(s, w): return Token('IDENTIFIER', w,       s.match.start())
+def make_lparen(s, w):     return Token('LPAREN',     w,       s.match.start())
+def make_rparen(s, w):     return Token('RPAREN',     w,       s.match.start())
+def make_setting(s, w):    return Token('SETTING',    w,       s.match.start())
+def make_bool_lit(s, w):   return Token('BOOL_LIT',   w,       s.match.start())
+def make_int_lit(s, w):    return Token('INT_LIT',    w,       s.match.start())
+def make_sym(s, w):        return Token('IDENTIFIER', w,       s.match.start())
+
+def make_string_lit(s, w):
+    literal = unescape(strip_quotes(w))
+    return Token('STRING_LIT', literal, s.match.start())
+
+def make_string_lit_25(s, w):
+    literal = replace_double_quotes(unescape(strip_quotes(w)))
+    return Token('STRING_LIT', literal, s.match.start())
 
 # specific symbol tokens
 def make_meta_expr(s, w):        return Token('META_EXPR',   w, s.match.start())
-def make_contains(s, w):         return Token('CONTAINS',   w, s.match.start())
-def make_concat(s, w):           return Token('CONCAT',     w, s.match.start())
-def make_at(s, w):               return Token('AT',         w, s.match.start())
-def make_indexof_var_args(s, w): return Token('INDEXOFVAR', w, s.match.start())
-def make_indexof_2_args(s, w):   return Token('INDEXOF',    w, s.match.start())
-def make_indexof_3_args(s, w):   return Token('INDEXOF2',   w, s.match.start())
-def make_prefixof(s, w):         return Token('PREFIXOF',   w, s.match.start())
-def make_suffixof(s, w):         return Token('SUFFIXOF',   w, s.match.start())
-def make_replace(s, w):          return Token('REPLACE',    w, s.match.start())
-def make_substring(s, w):        return Token('SUBSTRING',  w, s.match.start())
-def make_str_from_int(s, w):     return Token('FROM_INT',   w, s.match.start())
-def make_str_to_int(s, w):       return Token('TO_INT',     w, s.match.start())
-def make_length(s, w):           return Token('LENGTH',     w, s.match.start())
-def make_in_re(s, w):            return Token('IN_RE',      w, s.match.start())
-def make_str_to_re(s, w):        return Token('STR_TO_RE',  w, s.match.start())
-def make_re_allchar(s, w):       return Token('RE_ALLCHAR', w, s.match.start())
-def make_re_concat(s, w):        return Token('RE_CONCAT',  w, s.match.start())
-def make_re_star(s, w):          return Token('RE_STAR',    w, s.match.start())
-def make_re_plus(s, w):          return Token('RE_PLUS',    w, s.match.start())
-def make_re_range(s, w):         return Token('RE_RANGE',   w, s.match.start())
-def make_re_union(s, w):         return Token('RE_UNION',   w, s.match.start())
+def make_declare_fun(s, w):      return Token('DECLARE_FUN', w, s.match.start())
+def make_define_fun(s, w):       return Token('DEFINE_FUN',  w, s.match.start())
+def make_contains(s, w):         return Token('CONTAINS',    w, s.match.start())
+def make_concat(s, w):           return Token('CONCAT',      w, s.match.start())
+def make_at(s, w):               return Token('AT',          w, s.match.start())
+def make_indexof_var_args(s, w): return Token('INDEXOFVAR',  w, s.match.start())
+def make_indexof_2_args(s, w):   return Token('INDEXOF',     w, s.match.start())
+def make_indexof_3_args(s, w):   return Token('INDEXOF2',    w, s.match.start())
+def make_prefixof(s, w):         return Token('PREFIXOF',    w, s.match.start())
+def make_suffixof(s, w):         return Token('SUFFIXOF',    w, s.match.start())
+def make_replace(s, w):          return Token('REPLACE',     w, s.match.start())
+def make_substring(s, w):        return Token('SUBSTRING',   w, s.match.start())
+def make_str_from_int(s, w):     return Token('FROM_INT',    w, s.match.start())
+def make_str_to_int(s, w):       return Token('TO_INT',      w, s.match.start())
+def make_length(s, w):           return Token('LENGTH',      w, s.match.start())
+def make_in_re(s, w):            return Token('IN_RE',       w, s.match.start())
+def make_str_to_re(s, w):        return Token('STR_TO_RE',   w, s.match.start())
+def make_re_allchar(s, w):       return Token('RE_ALLCHAR',  w, s.match.start())
+def make_re_concat(s, w):        return Token('RE_CONCAT',   w, s.match.start())
+def make_re_star(s, w):          return Token('RE_STAR',     w, s.match.start())
+def make_re_plus(s, w):          return Token('RE_PLUS',     w, s.match.start())
+def make_re_range(s, w):         return Token('RE_RANGE',    w, s.match.start())
+def make_re_union(s, w):         return Token('RE_UNION',    w, s.match.start())
 
 # constants
 ALPHABET     = string.digits + string.ascii_letters + string.punctuation
@@ -73,10 +95,6 @@ SETTING_CHAR = r'[\w._\+\-\*\=%?!$_~&^<>@/|:]'
 #      pattern will match before the more specific one
 SMT_20_TOKENS = [
 
-    # sorts
-    (r'Int',  make_sort),
-    (r'Bool', make_sort),
-
     # Boolean functions
     (r'ite', make_sym),
     (r'not', make_sym),
@@ -89,8 +107,8 @@ SMT_20_TOKENS = [
     (r'set-info',         make_meta_expr),
     (r'declare-sort',     make_sym),
     (r'define-sort',      make_sym),
-    (r'declare-fun',      make_sym),
-    (r'define-fun',       make_sym),
+    (r'declare-fun',      make_declare_fun),
+    (r'define-fun',       make_define_fun),
     (r'declare-const',    make_sym),
     (r'define-const',     make_sym),
     (r'declare-variable', make_sym),
@@ -146,7 +164,6 @@ SMT_20_TOKENS = [
 ]
 
 SMT_20_STRING_TOKENS = [
-    (r'String', make_sort),
 
     # string
     (r'Concat',     make_concat),
@@ -181,7 +198,6 @@ SMT_20_STRING_TOKENS = [
 ]
 
 SMT_25_STRING_TOKENS = [
-    (r'String', make_sort),
 
     # string
     (r'str\.\+\+',     make_concat),
@@ -210,7 +226,7 @@ SMT_25_STRING_TOKENS = [
     (r'str\.to\.int',   make_str_to_int),
 
     # quotes
-    (r'"(?:""|[^"])*"', make_string_lit),
+    (r'"(?:""|[^"])*"', make_string_lit_25),
 ]
 
 # lexicons
@@ -232,12 +248,12 @@ def scan(string, language):
     elif language == SMT_25_STRING:
         tokens, remainder = smt_25_string_scanner.scan(string)
     else:
-        raise ValueError('invalid language: {!r}'.format(language))
+        raise ScanningError('invalid language: {!r}'.format(language))
 
     if len(remainder) > 0:
         token_context = '\n'.join('    {} {!r}'.format(t.name, t.value) for t in tokens[-5:])
         text_context  = remainder[:100]
-        raise IndexError('scanning error:\n{}\n    {!r}...'.format(token_context, text_context))
+        raise ScanningError('scanning error:\n{}\n    {!r}...'.format(token_context, text_context))
 
     return [t for t in tokens if t.name != 'WHITESPACE']
 
