@@ -117,7 +117,7 @@ def main():
     fuzz_parser.add_argument(
         '--re-range',
         dest    = 'skip_re_range',
-        action  = 'store_true',
+        action  = 'store_false',
         default = DEFAULT_SKIP_RE_RANGE,
         help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
     )
@@ -144,7 +144,7 @@ def main():
     multiply_parser.add_argument(
         '--re-range',
         dest    = 'skip_re_range',
-        action  = 'store_true',
+        action  = 'store_false',
         default = DEFAULT_SKIP_RE_RANGE,
         help    = 'Include re_range nodes in multiplication (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
     )
@@ -170,7 +170,7 @@ def main():
     translate_parser.add_argument(
         '--re-range',
         dest    = 'skip_re_range',
-        action  = 'store_true',
+        action  = 'store_false',
         default = DEFAULT_SKIP_RE_RANGE,
         help    = 'Include re_range nodes in translation (default: {})'.format(DEFAULT_SKIP_RE_RANGE)
     )
