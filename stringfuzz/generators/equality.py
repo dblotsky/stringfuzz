@@ -2,14 +2,11 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
-from stringfuzz.util import join_terms_with
+from stringfuzz.util import join_terms_with, random_string
 
 __all__ = [
     'equality',
 ]
-
-def random_string(size):
-    return ''.join(random.choice(ALPHABET) for i in range(size))
 
 def get_length(max_length, randomise):
     if randomise is False:
@@ -74,7 +71,7 @@ def make_equality(num_expressions, num_terms, prefix_length, suffix_length, add_
         expressions.append(equality)
 
     # add check sat
-    expressions.append(smt_sat())
+    expressions.append(smt_check_sat())
 
     # create variable declarations
     declarations = []

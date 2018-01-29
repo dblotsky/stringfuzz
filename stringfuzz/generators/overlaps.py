@@ -2,32 +2,11 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
+from stringfuzz.util import join_terms_with, random_string
 
 __all__ = [
     'overlaps',
 ]
-
-def random_string(size):
-    return ''.join(random.choice(ALPHABET) for i in range(size))
-
-def chain_concats(length):
-
-    # create left side
-    left_expr = smt_new_var()
-    left_vars = [left_expr]
-
-    # base case
-    if length < 2:
-        return left_vars, left_expr
-
-    # create right side
-    right_vars, right_expr = chain_concats(length - 1)
-
-    # build return value
-    all_vars = left_vars + right_vars
-    concat = smt_concat(left_expr, right_expr)
-
-    return all_vars, concat
 
 def make_overlaps(num_vars, length_of_consts):
 
@@ -40,7 +19,8 @@ def make_overlaps(num_vars, length_of_consts):
     right = smt_str_lit(random_string(length_of_consts))
 
     # create middle variables
-    variables, middle = chain_concats(num_vars)
+    middle_vars = [smt_new_var() for i in range(num_vars)]
+    middle      = join_terms_with(middle_vars, smt_concat)
 
     # create overlapping constraint
     left_concat     = smt_concat(left, middle)
@@ -50,12 +30,12 @@ def make_overlaps(num_vars, length_of_consts):
     # add constraint and sat-check
     expressions = [
         concat_equality,
-        smt_sat()
+        smt_check_sat()
     ]
 
     # create variable declarations
     declarations = []
-    for v in variables:
+    for v in middle_vars:
         declarations.append(smt_declare_var(v))
 
     return declarations + expressions

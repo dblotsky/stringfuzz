@@ -1,10 +1,21 @@
+import random
+
+from stringfuzz.scanner import ALPHABET
 from stringfuzz.ast import ConcatNode, ReConcatNode
 
 __all__ = [
+    'coin_toss',
+    'random_string',
     'join_terms_with',
 ]
 
 # public API
+def coin_toss():
+    return random.choice([True, False])
+
+def random_string(length):
+    return ''.join(random.choice(ALPHABET) for i in range(length))
+
 def join_terms_with(terms, concatenator):
     assert len(terms) > 0
 
