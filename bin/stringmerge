@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+
+'''
+Merge two existing problems.
+'''
+
+import sys
+import argparse
+
+from stringfuzz.ast import ExpressionNode, SortNode, IdentifierNode, FunctionDeclarationNode, SortedVarNode
+from stringfuzz.ast_walker import ASTWalker
+from stringfuzz.constants import LANGUAGES, SMT_25_STRING
+from stringfuzz.generator import generate
+from stringfuzz.parser import parse, ParsingError
+from stringfuzz.smt import smt_string_logic, smt_sat
+
+# defaults
+DEFAULT_RENAME_IDS = False
+
+# constants
+DECLARE_CONST = "declare-const"
+
+# helper functions 
+def assertion(expr):
+    if isinstance(expr, ExpressionNode):
+        symbol = expr.symbol
+        if isinstance(symbol, IdentifierNode) and symbol.name == "assert":
+            return True
+    return False
+
+def declaration(expr):
+    if isinstance(expr, (FunctionDeclarationNode, SortedVarNode)):
+        return True
+    if isinstance(expr, ExpressionNode):
+        symbol = expr.symbol
+        if isinstance(symbol, IdentifierNode) and symbol.name == DECLARE_CONST:
+            return True
+    return False
+
+def sort(expr):
+    return isinstance(expr, SortNode)
+
+# helper class
+class RenameIDWalker(ASTWalker):
+    def __init__(self, ast, suffix):
+        super(RenameIDWalker, self).__init__(ast)
+        self.suffix = str(suffix)
+
+    def exit_identifier(self, identifier, parent):
+        identifier.name += self.suffix
+
+# most important function
+def merge(asts, rename_ids):
+    if rename_ids:
+        for i in range(len(asts)):
+            asts[i] = RenameIDWalker(asts[i], i).walk()
+
+    flattened    = [expr for ast in asts for expr in ast]
+    combined     = set(flattened)
+    declarations = list(filter(declaration, combined))
+    sorts        = list(filter(sort, combined))
+    assertions   = list(filter(assertion, combined))
+    transformed  = [smt_string_logic()] + declarations + sorts + assertions + [smt_sat()]
+    return transformed
+
+# entry point
+
+def main():
+
+    # create arg parser
+    global_parser = argparse.ArgumentParser(description='SMTLIB 2.* problem merger.')
+    global_parser.add_argument(
+        'files',
+        nargs    = '+',
+        metavar  = 'F',
+        type     = argparse.FileType('r'),
+        help     = 'input files'
+    )
+    global_parser.add_argument(
+        '--in-lang',
+        '-i',
+        dest    = 'input_language',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'input language (default: {})'.format(SMT_25_STRING)
+    )
+    global_parser.add_argument(
+        '--out-lang',
+        '-o',
+        dest    = 'output_language',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'output language (default: {})'.format(SMT_25_STRING)
+    )
+    global_parser.add_argument(
+        '--rename',
+        dest    = 'rename_ids',
+        action  = 'store_true',
+        default = DEFAULT_RENAME_IDS,
+        help    = 'Rename identifiers to avoid conflicts (default: {})'.format(DEFAULT_RENAME_IDS)
+    )
+
+    # parse args
+    args = global_parser.parse_args()
+
+    # get general args
+    files           = args.files
+    input_language  = args.input_language
+    output_language = args.output_language
+    
+    # get args as a dict and pop general args
+    merge_args = vars(args)
+    merge_args.pop('files')
+    merge_args.pop('input_language')
+    merge_args.pop('output_language')
+
+    # read input
+    raw_in = [f.read() for f in files]
+
+    # parse input
+    try:
+        asts = [parse(raw, input_language) for raw in raw_in]
+    except ParsingError as e:
+        print(e, file=sys.stderr)
+        return 1
+
+    # merge the two ASTs into a new AST
+    transformed = merge(asts, **merge_args)
+
+    # transformers produce ASTs
+    print(generate(transformed, output_language))
+
+if __name__ == '__main__':
+    main()

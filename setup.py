@@ -11,7 +11,7 @@ setup(
     author       = 'Dmitry Blotsky',
     author_email = 'dmitry.blotsky@gmail.com',
     url          = 'https://github.com/dblotsky/stringfuzz',
-    scripts      = ['bin/stringfuzzx', 'bin/stringfuzzg', 'bin/stringstats'],
+    scripts      = ['bin/stringfuzzx', 'bin/stringfuzzg', 'bin/stringstats', 'bin/stringmerge'],
     packages     = find_packages(),
     package_dir  = {'stringfuzz': 'stringfuzz'},
 )

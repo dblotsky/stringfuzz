@@ -48,7 +48,11 @@ def with_spaces(terms):
 
 # data structures
 class ASTNode(object):
-    pass
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+    def __hash__(self):
+        return hash(repr(self))
 
 class LiteralNode(ASTNode):
     def __init__(self, value):
