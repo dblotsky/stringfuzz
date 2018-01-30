@@ -18,7 +18,7 @@ WITHOUT_INTEGERS = [c for c in ALL_CHARS if not c.isdecimal()]
 
 class TranslateTransformer(ASTWalker):
     def __init__(self, ast, character_set, skip_re_range):
-        super(TranslateTransformer, self).__init__(ast)
+        super().__init__(ast)
         self.table = self.make_table(character_set)
         self.skip_re_range = skip_re_range
 

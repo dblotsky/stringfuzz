@@ -7,7 +7,7 @@ __all__ = [
 class ASTWalker(object):
 
     def __init__(self, ast):
-        super(ASTWalker, self).__init__()
+        super().__init__()
         self.__ast = ast
 
     # public API

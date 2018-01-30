@@ -89,7 +89,7 @@ class ParsingError(IndexError):
         )
 
         # pass message to superclass
-        super(ParsingError, self).__init__(message)
+        super().__init__(message)
 
 # parsers
 def accept_arg(s):

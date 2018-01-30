@@ -14,7 +14,7 @@ __all__ = [
 class NotSupported(ValueError):
     def __init__(self, e, language):
         message = 'can\'t generate {!r} in language {!r}'.format(e, language)
-        super(NotSupported, self).__init__(message)
+        super().__init__(message)
 
 # functions
 def needs_encoding(c):
