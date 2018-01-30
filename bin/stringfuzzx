@@ -12,7 +12,7 @@ from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse, ParsingError
-from stringfuzz.ast import SettingNode, ExpressionNode, MetaExpressionNode
+from stringfuzz.ast import SettingNode, ExpressionNode, MetaCommandNode
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -50,7 +50,7 @@ TO_STRIP  = [GET_MODEL, GET_INFO]
 def should_keep(expr):
     if isinstance(expr, SettingNode):
         return False
-    if isinstance(expr, MetaExpressionNode):
+    if isinstance(expr, MetaCommandNode):
         return False
     if isinstance(expr, ExpressionNode):
         if expr.symbol in TO_STRIP:
@@ -130,7 +130,7 @@ def main():
         default = DEFAULT_SKIP_STR_TO_RE,
         help    = 'Include str_to_re nodes in grafting (default: {})'.format(DEFAULT_SKIP_STR_TO_RE)
     )
-    
+
     # multiply transformer
     multiply_parser = subparsers.add_parser(MULTIPLY, help='multiply transformer')
     multiply_parser.add_argument(

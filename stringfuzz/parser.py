@@ -204,7 +204,7 @@ def accept_sorted_var(s):
 
 def expect_expression(s):
 
-    # function definition
+    # declarations and definitions
     if s.accept('DECLARE_FUN'):
         name = expect_identifier(s)
 
@@ -230,6 +230,11 @@ def expect_expression(s):
         s.expect('RPAREN')
 
         return FunctionDefinitionNode(name, BracketsNode(signature), return_sort, body)
+
+    if s.accept('DECLARE_CONST'):
+        name        = expect_identifier(s)
+        return_sort = expect_sort(s)
+        return ConstantDeclarationNode(name, return_sort)
 
     # special expression cases
     if s.accept('CONCAT'):
@@ -366,9 +371,9 @@ def expect_expression(s):
         return union
 
     token = s.peek()
-    if s.accept('META_EXPR'):
+    if s.accept('META_COMMAND'):
         body = repeat_star(s, accept_meta_arg)
-        return MetaExpressionNode(token.value, body)
+        return MetaCommandNode(token.value, body)
 
     # generic expression case
     name = expect_identifier(s)

@@ -2,8 +2,6 @@
 Functions for creating ASTs.
 '''
 
-import numbers
-
 from stringfuzz.ast import *
 
 __all__ = [
@@ -78,41 +76,38 @@ def smt_reset_counters():
 
 # leaf expressions
 def smt_str_lit(value):
-    assert isinstance(value, str)
     return StringLitNode(value)
 
 def smt_int_lit(value):
-    assert isinstance(value, numbers.Real)
     return IntLitNode(value)
 
 def smt_bool_lit(value):
-    assert isinstance(value, bool)
     return BoolLitNode(value)
 
 # node expressions
 def smt_and(a, b):
-    return ExpressionNode(IdentifierNode('and'), [a, b])
+    return AndNode(a, b)
 
 def smt_or(a, b):
-    return ExpressionNode(IdentifierNode('or'), [a, b])
+    return OrNode(a, b)
 
 def smt_not(a):
-    return ExpressionNode(IdentifierNode('not'), [a])
+    return NotNode(a)
 
 def smt_equal(a, b):
-    return ExpressionNode(IdentifierNode('='), [a, b])
+    return RelationExpressionNode(IdentifierNode('='), a, b)
 
 def smt_gt(a, b):
-    return ExpressionNode(IdentifierNode('>'), [a, b])
+    return RelationExpressionNode(IdentifierNode('>'), a, b)
 
 def smt_lt(a, b):
-    return ExpressionNode(IdentifierNode('<'), [a, b])
+    return RelationExpressionNode(IdentifierNode('<'), a, b)
 
 def smt_gte(a, b):
-    return ExpressionNode(IdentifierNode('>='), [a, b])
+    return RelationExpressionNode(IdentifierNode('>='), a, b)
 
 def smt_lte(a, b):
-    return ExpressionNode(IdentifierNode('<='), [a, b])
+    return RelationExpressionNode(IdentifierNode('<='), a, b)
 
 def smt_concat(a, b):
     return ConcatNode(a, b)
@@ -146,22 +141,22 @@ def smt_regex_union(a, b):
 
 # commands
 def smt_assert(exp):
-    return ExpressionNode(IdentifierNode('assert'), [exp])
+    return AssertNode(exp)
 
 def smt_declare_var(identifier):
     return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode('String'))
 
 def smt_declare_const(identifier):
-    return ExpressionNode(IdentifierNode('declare-const'), [identifier, AtomicSortNode('String')])
+    return ConstantDeclarationNode(identifier, AtomicSortNode('String'))
 
 def smt_check_sat():
-    return ExpressionNode(IdentifierNode('check-sat'), [])
+    return CheckSatNode()
 
 def smt_get_model():
-    return ExpressionNode(IdentifierNode('get-model'), [])
+    return GetModelNode()
 
 def _smt_status(status):
-    return MetaExpressionNode(IdentifierNode('set-info'), [SettingNode('status'), MetaDataNode(status)])
+    return MetaCommandNode(IdentifierNode('set-info'), [SettingNode('status'), MetaDataNode(status)])
 
 def smt_is_sat():
     return _smt_status('sat')
@@ -170,4 +165,4 @@ def smt_is_unsat():
     return _smt_status('unsat')
 
 def smt_string_logic():
-    return MetaExpressionNode(IdentifierNode('set-logic'), [IdentifierNode('QF_S')])
+    return MetaCommandNode(IdentifierNode('set-logic'), [IdentifierNode('QF_S')])
