@@ -95,19 +95,19 @@ def smt_not(a):
     return NotNode(a)
 
 def smt_equal(a, b):
-    return RelationExpressionNode(IdentifierNode('='), a, b)
+    return EqualNode(a, b)
 
 def smt_gt(a, b):
-    return RelationExpressionNode(IdentifierNode('>'), a, b)
+    return GtNode(a, b)
 
 def smt_lt(a, b):
-    return RelationExpressionNode(IdentifierNode('<'), a, b)
+    return LtNode(a, b)
 
 def smt_gte(a, b):
-    return RelationExpressionNode(IdentifierNode('>='), a, b)
+    return GteNode(a, b)
 
 def smt_lte(a, b):
-    return RelationExpressionNode(IdentifierNode('<='), a, b)
+    return LteNode(a, b)
 
 def smt_concat(a, b):
     return ConcatNode(a, b)
@@ -143,11 +143,11 @@ def smt_regex_union(a, b):
 def smt_assert(exp):
     return AssertNode(exp)
 
-def smt_declare_var(identifier):
-    return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode('String'))
+def smt_declare_var(identifier, sort='String'):
+    return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode(sort))
 
-def smt_declare_const(identifier):
-    return ConstantDeclarationNode(identifier, AtomicSortNode('String'))
+def smt_declare_const(identifier, sort='String'):
+    return ConstantDeclarationNode(identifier, AtomicSortNode(sort))
 
 def smt_check_sat():
     return CheckSatNode()
@@ -156,7 +156,7 @@ def smt_get_model():
     return GetModelNode()
 
 def _smt_status(status):
-    return MetaCommandNode(IdentifierNode('set-info'), [SettingNode('status'), MetaDataNode(status)])
+    return MetaCommandNode(IdentifierNode('set-info'), SettingNode('status'), MetaDataNode(status))
 
 def smt_is_sat():
     return _smt_status('sat')
@@ -165,4 +165,4 @@ def smt_is_unsat():
     return _smt_status('unsat')
 
 def smt_string_logic():
-    return MetaCommandNode(IdentifierNode('set-logic'), [IdentifierNode('QF_S')])
+    return MetaCommandNode(IdentifierNode('set-logic'), IdentifierNode('QF_S'))

@@ -204,6 +204,10 @@ def accept_sorted_var(s):
 
 def expect_expression(s):
 
+    if s.accept('ASSERT'):
+        assertion = expect_arg(s)
+        return AssertNode(assertion)
+
     # declarations and definitions
     if s.accept('DECLARE_FUN'):
         name = expect_identifier(s)
@@ -373,13 +377,13 @@ def expect_expression(s):
     token = s.peek()
     if s.accept('META_COMMAND'):
         body = repeat_star(s, accept_meta_arg)
-        return MetaCommandNode(token.value, body)
+        return MetaCommandNode(token.value, *body)
 
     # generic expression case
     name = expect_identifier(s)
     body = repeat_star(s, accept_arg)
 
-    return ExpressionNode(name, body)
+    return GenericExpressionNode(name, *body)
 
 def get_expressions(s):
 

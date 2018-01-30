@@ -7,6 +7,7 @@ __all__ = [
     'coin_toss',
     'random_string',
     'join_terms_with',
+    'all_same',
 ]
 
 # public API
@@ -28,3 +29,8 @@ def join_terms_with(terms, concatenator):
         result = concatenator(term, result)
 
     return result
+
+# CREDIT:
+#        https://stackoverflow.com/questions/3844801/check-if-all-elements-in-a-list-are-identical
+def all_same(lst):
+    return not lst or lst.count(lst[0]) == len(lst)

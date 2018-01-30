@@ -61,6 +61,7 @@ def make_meta_command(s, w):     return Token('META_COMMAND',  w, s.match.start(
 def make_declare_fun(s, w):      return Token('DECLARE_FUN',   w, s.match.start())
 def make_define_fun(s, w):       return Token('DEFINE_FUN',    w, s.match.start())
 def make_declare_const(s, w):    return Token('DECLARE_CONST', w, s.match.start())
+def make_assert(s, w):           return Token('ASSERT',        w, s.match.start())
 def make_contains(s, w):         return Token('CONTAINS',      w, s.match.start())
 def make_concat(s, w):           return Token('CONCAT',        w, s.match.start())
 def make_at(s, w):               return Token('AT',            w, s.match.start())
@@ -116,7 +117,7 @@ SMT_20_TOKENS = [
     (r'define-variable',  make_sym),
     (r'push',             make_sym),
     (r'pop',              make_sym),
-    (r'assert',           make_sym),
+    (r'assert',           make_assert),
     (r'check-sat',        make_sym),
     (r'get-assertions',   make_sym),
     (r'get-proof',        make_sym),

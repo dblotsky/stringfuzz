@@ -6,6 +6,14 @@ The AST is a list of ASTNodes.
 '''
 
 __all__ = [
+    'STRING_SORT',
+    'INT_SORT',
+    'BOOL_SORT',
+    'REGEX_SORT',
+    'UNIT_SORT',
+    'ANY_SORT',
+    'DECLARABLE_SORTS',
+
     'LiteralNode',
     'BoolLitNode',
     'IntLitNode',
@@ -21,7 +29,7 @@ __all__ = [
     'SortedVarNode',
     'BracketsNode',
     'ExpressionNode',
-    'CommandNode',
+    'GenericExpressionNode',
     'MetaCommandNode',
     'AssertNode',
     'CheckSatNode',
@@ -29,7 +37,11 @@ __all__ = [
     'AndNode',
     'OrNode',
     'NotNode',
-    'RelationExpressionNode',
+    'EqualNode',
+    'GtNode',
+    'LtNode',
+    'GteNode',
+    'LteNode',
     'ConcatNode',
     'ContainsNode',
     'AtNode',
@@ -49,7 +61,7 @@ __all__ = [
     'RePlusNode',
     'ReRangeNode',
     'ReUnionNode',
-    'ReAllCharNode'
+    'ReAllCharNode',
 ]
 
 # constants
@@ -61,13 +73,12 @@ UNIT_SORT   = 'Unit'
 ANY_SORT    = '*'
 
 UNIT_SIGNATURE      = []
-UNCHECKED_SIGNATURE = [None]
+UNCHECKED_SIGNATURE = None
 
-ATOMIC_SORTS = [
+DECLARABLE_SORTS = [
     STRING_SORT,
     INT_SORT,
     BOOL_SORT,
-    REGEX_SORT,
 ]
 
 SORT_TYPE      = str
@@ -81,53 +92,7 @@ def with_spaces(terms):
 class _ASTNode(object):
     pass
 
-class _SortedASTNode(_ASTNode):
-
-    # NOTE:
-    #      treating everything as a function; even literals
-    def __init__(self, signature, sort):
-        assert isinstance(sort, SORT_TYPE)
-        assert isinstance(signature, SIGNATURE_TYPE)
-        self.signature = signature
-        self.sort      = sort
-
-# literals
-class LiteralNode(_SortedASTNode):
-    def __init__(self, value, sort):
-        super().__init__(UNIT_SIGNATURE, sort)
-        self.value = value
-
-    def __repr__(self):
-        return 'Literal<{}>'.format(self.value)
-
-class BoolLitNode(LiteralNode):
-    def __init__(self, value):
-        assert isinstance(value, bool)
-        super().__init__(value, BOOL_SORT)
-
-    def __repr__(self):
-        return 'BoolLit<{}>'.format(self.value)
-
-class IntLitNode(LiteralNode):
-    def __init__(self, value):
-        assert isinstance(value, numbers.Real) and not isinstance(value, bool)
-        super().__init__(value, INT_SORT)
-
-    def __repr__(self):
-        return 'IntLit<{}>'.format(self.value)
-
-class StringLitNode(LiteralNode):
-    def __init__(self, value):
-        assert isinstance(value, str)
-        super().__init__(value, STRING_SORT)
-
-    def __len__(self):
-        return len(self.value)
-
-    def __repr__(self):
-        return 'StringLit<{!r}>'.format(self.value)
-
-# sorts
+# "atoms"
 class SortNode(_ASTNode):
     pass
 
@@ -139,14 +104,13 @@ class AtomicSortNode(SortNode):
         return 'Sort<{}>'.format(self.name)
 
 class CompoundSortNode(SortNode):
-    def __init__(self, symbol, sorts):
-        self.symbol = symbol
+    def __init__(self, constructor, sorts):
+        self.constructor = constructor
         self.sorts = sorts
 
     def __repr__(self):
-        return 'CSort<{} {}>'.format(self.symbol, with_spaces(self.sorts))
+        return 'Sort<{} {}>'.format(self.symbol, with_spaces(self.sorts))
 
-# commands
 class SettingNode(_ASTNode):
     def __init__(self, name):
         self.name = name
@@ -161,7 +125,6 @@ class MetaDataNode(_ASTNode):
     def __repr__(self):
         return 'MetaData<{}>'.format(self.value)
 
-# other atoms
 class IdentifierNode(_ASTNode):
     def __init__(self, name):
         self.name = name
@@ -188,188 +151,299 @@ class BracketsNode(_ASTNode):
     def __repr__(self):
         return '({})'.format(with_spaces(self.body))
 
+# NOTE:
+#      sort-wise, we're treating everything as a function; even literals
+class _SortedASTNode(_ASTNode):
+    _signature = NotImplemented
+    _sort      = NotImplemented
+
+    def __init__(self):
+        assert isinstance(self._sort, SORT_TYPE)
+        assert self._signature == UNCHECKED_SIGNATURE or isinstance(self._signature, SIGNATURE_TYPE)
+
+    @classmethod
+    def get_signature(cls):
+        return cls._signature
+
+    @classmethod
+    def get_sort(cls):
+        return cls._sort
+
+    @classmethod
+    def is_terminal(cls):
+        return cls._signature == UNIT_SIGNATURE
+
+    @classmethod
+    def accepts(cls, sort):
+        if cls._signature == UNCHECKED_SIGNATURE:
+            return False
+        return sort in cls._signature
+
+    @classmethod
+    def returns(cls, sort):
+        return sort == cls._sort
+
+# literals
+class LiteralNode(_SortedASTNode):
+    _signature = UNIT_SIGNATURE
+
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def __repr__(self):
+        return '{}<{}>'.format(self.get_sort(), self.value)
+
+class BoolLitNode(LiteralNode):
+    _sort = BOOL_SORT
+
+    def __init__(self, value):
+        assert isinstance(value, bool)
+        super().__init__(value)
+
+class IntLitNode(LiteralNode):
+    _sort = INT_SORT
+
+    def __init__(self, value):
+        assert isinstance(value, numbers.Real) and not isinstance(value, bool)
+        super().__init__(value)
+
+class StringLitNode(LiteralNode):
+    _sort = STRING_SORT
+
+    def __init__(self, value):
+        assert isinstance(value, str)
+        super().__init__(value)
+
+    def __len__(self):
+        return len(self.value)
+
 # expressions
 class ExpressionNode(_ASTNode):
-    def __init__(self, symbol, body):
-        assert symbol is not None
-        self.symbol = symbol
-        self.body   = body
+    _symbol = NotImplemented
+
+    def __init__(self, body):
+        if isinstance(self._symbol, str):
+            self._symbol = IdentifierNode(self._symbol)
+        self.body = body
+
+    @property
+    def symbol(self):
+        return self._symbol
 
     def __repr__(self):
-        contents = with_spaces([self.symbol] + self.body)
-        return 'Expr<{}>'.format(contents)
+        return '(\'{}\' {})'.format(self.symbol, with_spaces(self.body))
 
 class _SortedExpressionNode(ExpressionNode, _SortedASTNode):
-    def __init__(self, symbol, body, signature, sort):
+    def __init__(self, body):
         # TODO:
         #      enforce that the arguments are of correct types
-        # NOTE:
-        #      use None to denote a signature that doesn't need to checked
-        ExpressionNode.__init__(self, symbol, body)
-        _SortedASTNode.__init__(self, signature, sort)
+        _SortedASTNode.__init__(self)
+        ExpressionNode.__init__(self, body)
 
-class _SpecificExpression(_SortedExpressionNode):
-    def __repr__(self):
-        contents = with_spaces(self.body)
-        return '{}<{}>'.format(self.symbol, contents)
+class _NullaryExpression(_SortedExpressionNode):
+    def __init__(self):
+        super().__init__([])
+
+class _UnaryExpression(_SortedExpressionNode):
+    def __init__(self, a):
+        super().__init__([a])
+
+class _BinaryExpression(_SortedExpressionNode):
+    def __init__(self, a, b):
+        super().__init__([a, b])
+
+class _TernaryExpression(_SortedExpressionNode):
+    def __init__(self, a, b, c):
+        super().__init__([a, b, c])
+
+class _QuaternaryExpression(_SortedExpressionNode):
+    def __init__(self, a, b, c, d):
+        super().__init__([a, b, c, d])
+
+class _NaryExpression(_SortedExpressionNode):
+    def __init__(self, *args):
+        super().__init__(args)
+
+class _RelationExpressionNode(_BinaryExpression):
+    _signature = [INT_SORT, INT_SORT]
+    _sort      = BOOL_SORT
+
+class GenericExpressionNode(_NaryExpression):
+    _signature = UNCHECKED_SIGNATURE
+    _sort      = UNIT_SORT
+
+    def __init__(self, symbol, *args):
+        self._symbol = symbol
+        super().__init__(*args)
 
 # commands
-class CommandNode(_SortedExpressionNode):
-    def __init__(self, symbol, body, signature):
-        super().__init__(symbol, body, signature, UNIT_SORT)
+class _CommandNode(_SortedASTNode):
+    _sort = UNIT_SORT
 
-class MetaCommandNode(CommandNode):
-    def __init__(self, symbol, body):
-        super().__init__(symbol, body, UNCHECKED_SIGNATURE)
+class MetaCommandNode(_CommandNode, _NaryExpression):
+    _signature = UNCHECKED_SIGNATURE
 
-class AssertNode(CommandNode):
-    def __init__(self, expression):
-        super().__init__('assert', [expression], [BOOL_SORT])
+    def __init__(self, symbol, *args):
+        self._symbol = symbol
+        super().__init__(*args)
 
-class CheckSatNode(CommandNode):
-    def __init__(self):
-        super().__init__('check-sat', [], UNIT_SIGNATURE)
+class AssertNode(_CommandNode, _UnaryExpression):
+    _signature = [BOOL_SORT]
+    _symbol    = 'assert'
 
-class GetModelNode(CommandNode):
-    def __init__(self):
-        super().__init__('get-model', [], UNIT_SIGNATURE)
+class CheckSatNode(_CommandNode, _NullaryExpression):
+    _signature = UNIT_SIGNATURE
+    _symbol    = 'check-sat'
 
-class FunctionDeclarationNode(CommandNode):
-    def __init__(self, name, function_signature, return_sort):
-        self.name               = name
-        self.function_signature = function_signature
-        self.return_sort        = return_sort
-        super().__init__(
-            'declare-fun',
-            [name, function_signature, return_sort],
-            UNCHECKED_SIGNATURE
-        )
+class GetModelNode(_CommandNode, _NullaryExpression):
+    _signature = UNIT_SIGNATURE
+    _symbol    = 'get-model'
 
-    def __repr__(self):
-        return 'FunDecl<{}: ({}) -> {}>'.format(
-            self.name,
-            with_spaces(self.function_signature.body),
-            self.return_sort
-        )
+class FunctionDeclarationNode(_CommandNode, _TernaryExpression):
+    _signature = UNCHECKED_SIGNATURE
+    _symbol    = 'declare-fun'
 
-class FunctionDefinitionNode(CommandNode):
-    def __init__(self, name, function_signature, return_sort, definition):
-        self.name               = name
-        self.function_signature = function_signature
-        self.return_sort        = return_sort
-        self.definition         = definition
-        super().__init__(
-            'define-fun',
-            [name, function_signature, return_sort, definition],
-            UNCHECKED_SIGNATURE
-        )
+class FunctionDefinitionNode(_CommandNode, _QuaternaryExpression):
+    _signature = UNCHECKED_SIGNATURE
+    _symbol    = 'define-fun'
 
-    def __repr__(self):
-        return 'FunDef<{}: ({}) -> {} | {}>'.format(
-            self.name,
-            with_spaces(self.function_signature.body),
-            self.return_sort,
-            self.definition
-        )
+class ConstantDeclarationNode(_CommandNode, _BinaryExpression):
+    _signature = UNCHECKED_SIGNATURE
+    _symbol    = 'declare-const'
 
-class ConstantDeclarationNode(CommandNode):
-    def __init__(self, name, return_sort):
-        self.name        = name
-        self.return_sort = return_sort
-        super().__init__('declare-const', [name, return_sort], UNIT_SIGNATURE)
+# boolean expressions
+class AndNode(_BinaryExpression):
+    _signature = [BOOL_SORT, BOOL_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'and'
 
-# specific expressions
-class AndNode(_SortedExpressionNode):
-    def __init__(self, a, b):
-        super().__init__('and', [a, b], [BOOL_SORT, BOOL_SORT], BOOL_SORT)
+class OrNode(_BinaryExpression):
+    _signature = [BOOL_SORT, BOOL_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'or'
 
-class OrNode(_SortedExpressionNode):
-    def __init__(self, a, b):
-        super().__init__('or', [a, b], [BOOL_SORT, BOOL_SORT], BOOL_SORT)
+class NotNode(_UnaryExpression):
+    _signature = [BOOL_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'not'
 
-class NotNode(_SortedExpressionNode):
-    def __init__(self, a):
-        super().__init__('not', [a], [BOOL_SORT], BOOL_SORT)
+# relations
+class EqualNode(_RelationExpressionNode):
+    _signature = [ANY_SORT, ANY_SORT]
+    _symbol    = '='
 
-class RelationExpressionNode(_SortedExpressionNode):
-    def __init__(self, symbol, a, b):
-        super().__init__(symbol, [a, b], [ANY_SORT, ANY_SORT], BOOL_SORT)
+class GtNode(_RelationExpressionNode):
+    _symbol = '>'
 
-class ConcatNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('Concat', [a, b], [STRING_SORT, STRING_SORT], STRING_SORT)
+class LtNode(_RelationExpressionNode):
+    _symbol = '<'
 
-class ContainsNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('Contains', [a, b], [STRING_SORT, STRING_SORT], BOOL_SORT)
+class GteNode(_RelationExpressionNode):
 
-class AtNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('At', [a, b], [STRING_SORT, INT_SORT], STRING_SORT)
+    _symbol = '>='
 
-class LengthNode(_SpecificExpression):
-    def __init__(self, a):
-        super().__init__('Length', [a], [STRING_SORT], INT_SORT)
+class LteNode(_RelationExpressionNode):
 
-class IndexOfNode(_SpecificExpression):
-    def __init__(self, haystack, needle):
-        super().__init__('IndexOf', [haystack, needle], [STRING_SORT, STRING_SORT], INT_SORT)
+    _symbol = '<='
 
-class IndexOf2Node(_SpecificExpression):
-    def __init__(self, haystack, needle, start):
-        super().__init__('IndexOf2', [haystack, needle, start], [STRING_SORT, STRING_SORT, INT_SORT], INT_SORT)
+# functions
+class ConcatNode(_BinaryExpression):
+    _signature = [STRING_SORT, STRING_SORT]
+    _sort      = STRING_SORT
+    _symbol    = 'Concat'
 
-class PrefixOfNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('PrefixOf', [a, b], [STRING_SORT, STRING_SORT], BOOL_SORT)
+class ContainsNode(_BinaryExpression):
+    _signature = [STRING_SORT, STRING_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'Contains'
 
-class SuffixOfNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('SuffixOf', [a, b], [STRING_SORT, STRING_SORT], BOOL_SORT)
+class AtNode(_BinaryExpression):
+    _signature = [STRING_SORT, INT_SORT]
+    _sort      = STRING_SORT
+    _symbol    = 'At'
 
-class StringReplaceNode(_SpecificExpression):
-    def __init__(self, a, b, c):
-        super().__init__('Replace', [a, b, c], [STRING_SORT, STRING_SORT, STRING_SORT], STRING_SORT)
+class LengthNode(_UnaryExpression):
+    _signature = [STRING_SORT]
+    _sort      = INT_SORT
+    _symbol    = 'Length'
 
-class SubstringNode(_SpecificExpression):
-    def __init__(self, a, b, c):
-        super().__init__('Substring', [a, b, c], [STRING_SORT, INT_SORT, INT_SORT], STRING_SORT)
+class IndexOfNode(_BinaryExpression):
+    _signature = [STRING_SORT, STRING_SORT]
+    _sort      = INT_SORT
+    _symbol    = 'IndexOf'
 
-class FromIntNode(_SpecificExpression):
-    def __init__(self, a):
-        super().__init__('FromInt', [a], [INT_SORT], STRING_SORT)
+class IndexOf2Node(_TernaryExpression):
+    _signature = [STRING_SORT, STRING_SORT, INT_SORT]
+    _sort      = INT_SORT
+    _symbol    = 'IndexOf2'
 
-class ToIntNode(_SpecificExpression):
-    def __init__(self, a):
-        super().__init__('ToInt', [a], [STRING_SORT], INT_SORT)
+class PrefixOfNode(_BinaryExpression):
+    _signature = [STRING_SORT, STRING_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'PrefixOf'
 
-class InReNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('InRegex', [a, b], [STRING_SORT, REGEX_SORT], BOOL_SORT)
+class SuffixOfNode(_BinaryExpression):
+    _signature = [STRING_SORT, STRING_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'SuffixOf'
 
-class StrToReNode(_SpecificExpression):
-    def __init__(self, a):
-        super().__init__('Str2Re', [a], [STRING_SORT], REGEX_SORT)
+class StringReplaceNode(_TernaryExpression):
+    _signature = [STRING_SORT, STRING_SORT, STRING_SORT]
+    _sort      = STRING_SORT
+    _symbol    = 'Replace'
 
-class ReConcatNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('ReConcat', [a, b], [REGEX_SORT, REGEX_SORT], REGEX_SORT)
+class SubstringNode(_TernaryExpression):
+    _signature = [STRING_SORT, INT_SORT, INT_SORT]
+    _sort      = STRING_SORT
+    _symbol    = 'Substring'
 
-class ReStarNode(_SpecificExpression):
-    def __init__(self, a):
-        super().__init__('ReStar', [a], [REGEX_SORT], REGEX_SORT)
+class FromIntNode(_UnaryExpression):
+    _signature = [INT_SORT]
+    _sort      = STRING_SORT
+    _symbol    = 'FromInt'
 
-class RePlusNode(_SpecificExpression):
-    def __init__(self, a):
-        super().__init__('RePlus', [a], [REGEX_SORT], REGEX_SORT)
+class ToIntNode(_UnaryExpression):
+    _signature = [STRING_SORT]
+    _sort      = INT_SORT
+    _symbol    = 'ToInt'
 
-class ReRangeNode(_SpecificExpression):
+class InReNode(_BinaryExpression):
+    _signature = [STRING_SORT, REGEX_SORT]
+    _sort      = BOOL_SORT
+    _symbol    = 'InRegex'
+
+class StrToReNode(_UnaryExpression):
+    _signature = [STRING_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'Str2Re'
+
+class ReConcatNode(_BinaryExpression):
+    _signature = [REGEX_SORT, REGEX_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'ReConcat'
+
+class ReStarNode(_UnaryExpression):
+    _signature = [REGEX_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'ReStar'
+
+class RePlusNode(_UnaryExpression):
+    _signature = [REGEX_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'RePlus'
+
+class ReRangeNode(_BinaryExpression):
+    _signature = [STRING_SORT, STRING_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'ReRange'
+
     def __init__(self, a, b):
         # TODO:
         #      assert that arguments are literals
-        super().__init__('ReRange', [a, b], [STRING_SORT, STRING_SORT], REGEX_SORT)
+        super().__init__(a, b)
 
-class ReUnionNode(_SpecificExpression):
-    def __init__(self, a, b):
-        super().__init__('ReUnion', [a, b], [REGEX_SORT, REGEX_SORT], REGEX_SORT)
-
+class ReUnionNode(_BinaryExpression):
+    _signature = [REGEX_SORT, REGEX_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'ReUnion'

@@ -86,13 +86,14 @@ DEFAULT_TERM_DEPTH      = 0
 DEFAULT_REGEX_VAR_MIN   = None
 DEFAULT_REGEX_VAR_MAX   = None
 
-DEFAULT_NUM_RANDOM_VARS    = 5
-DEFAULT_NUM_RANDOM_ASSERTS = 10
-DEFAULT_RANDOM_DEPTH       = 2
-DEFAULT_MAX_RANDOM_TERMS   = 5
-DEFAULT_MAX_RANDOM_STRINGS = 10
-DEFAULT_MAX_RANDOM_NUMBERS = 10
-DEFAULT_SEMANTICALLY_VALID = True
+DEFAULT_NUM_RANDOM_VARS     = 5
+DEFAULT_NUM_RANDOM_ASSERTS  = 10
+DEFAULT_RANDOM_DEPTH        = 2
+DEFAULT_MAX_RANDOM_TERMS    = 5
+DEFAULT_MAX_RANDOM_STRINGS  = 10
+DEFAULT_MAX_RANDOM_NUMBERS  = 10
+DEFAULT_SEMANTICALLY_VALID  = False
+DEFAULT_LITERAL_PROBABILITY = 0.1
 
 def main():
 
@@ -449,7 +450,7 @@ def main():
         metavar = 'N',
         type    = int,
         default = DEFAULT_NUM_RANDOM_VARS,
-        help    = 'number of variables in the problem (default: {})'.format(DEFAULT_NUM_RANDOM_VARS)
+        help    = 'number of variables (of each sort) in the problem (default: {})'.format(DEFAULT_NUM_RANDOM_VARS)
     )
     random_ast_parser.add_argument(
         '--num-asserts',
@@ -503,6 +504,15 @@ def main():
         action  = 'store_true',
         default = DEFAULT_SEMANTICALLY_VALID,
         help    = 'generate semantically valid problems (default: {})'.format(DEFAULT_SEMANTICALLY_VALID)
+    )
+    random_ast_parser.add_argument(
+        '--literal-chance',
+        '-p',
+        dest    = 'literal_probability',
+        metavar = 'P',
+        type    = float,
+        default = DEFAULT_LITERAL_PROBABILITY,
+        help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
     )
 
     # parse args

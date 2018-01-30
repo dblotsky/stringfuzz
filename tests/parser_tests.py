@@ -23,7 +23,7 @@ class TestParser(unittest.TestCase):
         expressions = parse('(check-sat)', SMT_20)
         self.assertEqual(len(expressions), 1)
         self.assertEqual(expressions[0].symbol.name, 'check-sat')
-        self.assertListEqual(expressions[0].body, [])
+        self.assertTupleEqual(expressions[0].body, ())
 
     def test_simple_smt_20(self):
         expressions = parse('''
@@ -34,7 +34,7 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(len(expressions), 3)
 
-        self.assertEqual(expressions[0].symbol, 'declare-fun')
+        self.assertEqual(expressions[0].symbol.name, 'declare-fun')
         self.assertEqual(expressions[0].body[0].name, 'X')
         self.assertEqual(expressions[0].body[2].name, 'String')
 
@@ -54,7 +54,7 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(len(expressions), 3)
 
-        self.assertEqual(expressions[0].symbol, 'declare-fun')
+        self.assertEqual(expressions[0].symbol.name, 'declare-fun')
         self.assertEqual(expressions[0].body[0].name, 'X')
         self.assertEqual(expressions[0].body[2].name, 'String')
 
