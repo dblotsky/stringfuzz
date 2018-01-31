@@ -11,6 +11,7 @@ __all__ = [
     'smt_new_const',
     'smt_str_lit',
     'smt_int_lit',
+    'smt_bool_lit',
     'smt_assert',
     'smt_equal',
     'smt_gt',
@@ -22,8 +23,8 @@ __all__ = [
     'smt_len',
     'smt_declare_var',
     'smt_declare_const',
-    'smt_sat',
-    'smt_model',
+    'smt_check_sat',
+    'smt_get_model',
     'smt_reset_counters',
     'smt_str_to_re',
     'smt_regex_in',
@@ -48,7 +49,7 @@ CONST_PREFIX = 'const'
 var_counter   = 0
 const_counter = 0
 
-# functions
+# helper functions
 def smt_var(suffix):
     return IdentifierNode('{}{}'.format(VAR_PREFIX, suffix))
 
@@ -73,38 +74,40 @@ def smt_reset_counters():
     const_counter = 0
     var_counter = 0
 
+# leaf expressions
 def smt_str_lit(value):
     return StringLitNode(value)
 
 def smt_int_lit(value):
     return IntLitNode(value)
 
-def smt_assert(exp):
-    return ExpressionNode(IdentifierNode('assert'), [exp])
+def smt_bool_lit(value):
+    return BoolLitNode(value)
 
+# node expressions
 def smt_and(a, b):
-    return ExpressionNode(IdentifierNode('and'), [a, b])
+    return AndNode(a, b)
 
 def smt_or(a, b):
-    return ExpressionNode(IdentifierNode('or'), [a, b])
+    return OrNode(a, b)
 
 def smt_not(a):
-    return ExpressionNode(IdentifierNode('not'), [a])
+    return NotNode(a)
 
 def smt_equal(a, b):
-    return ExpressionNode(IdentifierNode('='), [a, b])
+    return EqualNode(a, b)
 
 def smt_gt(a, b):
-    return ExpressionNode(IdentifierNode('>'), [a, b])
+    return GtNode(a, b)
 
 def smt_lt(a, b):
-    return ExpressionNode(IdentifierNode('<'), [a, b])
+    return LtNode(a, b)
 
 def smt_gte(a, b):
-    return ExpressionNode(IdentifierNode('>='), [a, b])
+    return GteNode(a, b)
 
 def smt_lte(a, b):
-    return ExpressionNode(IdentifierNode('<='), [a, b])
+    return LteNode(a, b)
 
 def smt_concat(a, b):
     return ConcatNode(a, b)
@@ -136,26 +139,30 @@ def smt_regex_star(a):
 def smt_regex_union(a, b):
     return ReUnionNode(a, b)
 
-def smt_declare_var(identifier):
-    return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode('String'))
+# commands
+def smt_assert(exp):
+    return AssertNode(exp)
 
-def smt_declare_const(identifier):
-    return ExpressionNode(IdentifierNode('declare-const'), [identifier, AtomicSortNode('String')])
+def smt_declare_var(identifier, sort='String'):
+    return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode(sort))
 
-def smt_sat():
-    return ExpressionNode(IdentifierNode('check-sat'), [])
+def smt_declare_const(identifier, sort='String'):
+    return ConstantDeclarationNode(identifier, AtomicSortNode(sort))
 
-def smt_model():
-    return ExpressionNode(IdentifierNode('get-model'), [])
+def smt_check_sat():
+    return CheckSatNode()
 
-def smt_status(status):
-    return MetaExpressionNode(IdentifierNode('set-info'), [SettingNode('status'), MetaDataNode(status)])
+def smt_get_model():
+    return GetModelNode()
+
+def _smt_status(status):
+    return MetaCommandNode(IdentifierNode('set-info'), SettingNode('status'), MetaDataNode(status))
 
 def smt_is_sat():
-    return smt_status('sat')
+    return _smt_status('sat')
 
 def smt_is_unsat():
-    return smt_status('unsat')
+    return _smt_status('unsat')
 
 def smt_string_logic():
-    return MetaExpressionNode(IdentifierNode('set-logic'), [IdentifierNode('QF_S')])
+    return MetaCommandNode(IdentifierNode('set-logic'), IdentifierNode('QF_S'))

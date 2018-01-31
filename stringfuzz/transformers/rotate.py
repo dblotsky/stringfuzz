@@ -7,7 +7,7 @@ __all__ = [
 
 class RotateTransformer(ASTWalker):
     def __init__(self, ast):
-        super(RotateTransformer, self).__init__(ast)
+        super().__init__(ast)
 
     def exit_expression(self, expr, parent):
         for uniform in [ALL_INT_ARGS, ALL_RX_ARGS, ALL_STR_ARGS]:

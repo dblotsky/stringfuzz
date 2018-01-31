@@ -11,7 +11,7 @@ import random
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
 from stringfuzz.generator import generate
-from stringfuzz.smt import smt_model, smt_string_logic
+from stringfuzz.smt import smt_get_model, smt_string_logic
 
 from stringfuzz.generators import concats, SYNTACTIC_DEPTH, SEMANTIC_DEPTH
 from stringfuzz.generators import overlaps
@@ -85,6 +85,15 @@ DEFAULT_REGEX_LIT_MAX   = 3
 DEFAULT_TERM_DEPTH      = 0
 DEFAULT_REGEX_VAR_MIN   = None
 DEFAULT_REGEX_VAR_MAX   = None
+
+DEFAULT_NUM_RANDOM_VARS     = 5
+DEFAULT_NUM_RANDOM_ASSERTS  = 10
+DEFAULT_RANDOM_DEPTH        = 2
+DEFAULT_MAX_RANDOM_TERMS    = 5
+DEFAULT_MAX_RANDOM_STRINGS  = 10
+DEFAULT_MAX_RANDOM_NUMBERS  = 10
+DEFAULT_SEMANTICALLY_VALID  = False
+DEFAULT_LITERAL_PROBABILITY = 0.1
 
 def main():
 
@@ -432,8 +441,79 @@ def main():
         help    = 'length of the text (default: {})'.format(DEFAULT_LENGTH)
     )
 
-    # # random_ast fuzzer
-    # random_ast_parser = subparsers.add_parser(RANDOM_AST, help='random but syntactically valid problem')
+    # random_ast fuzzer
+    random_ast_parser = subparsers.add_parser(RANDOM_AST, help='random but syntactically valid problem')
+    random_ast_parser.add_argument(
+        '--num-vars',
+        '-v',
+        dest    = 'num_vars',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_RANDOM_VARS,
+        help    = 'number of variables (of each sort) in the problem (default: {})'.format(DEFAULT_NUM_RANDOM_VARS)
+    )
+    random_ast_parser.add_argument(
+        '--num-asserts',
+        '-n',
+        dest    = 'num_asserts',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_RANDOM_ASSERTS,
+        help    = 'number of asserts in the problem (default: {})'.format(DEFAULT_NUM_RANDOM_ASSERTS)
+    )
+    random_ast_parser.add_argument(
+        '--depth',
+        '-d',
+        dest    = 'depth',
+        metavar = 'D',
+        type    = int,
+        default = DEFAULT_RANDOM_DEPTH,
+        help    = 'depth of nested expressions (default: {})'.format(DEFAULT_RANDOM_DEPTH)
+    )
+    random_ast_parser.add_argument(
+        '--max-terms',
+        '-t',
+        dest    = 'max_terms',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_TERMS,
+        help    = 'maximum number of terms for n-ary expressions, like concats (default: {})'.format(DEFAULT_MAX_RANDOM_TERMS)
+    )
+    random_ast_parser.add_argument(
+        '--max-string',
+        '-l',
+        dest    = 'max_str_lit_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_STRINGS,
+        help    = 'maximum length of string literals (default: {})'.format(DEFAULT_MAX_RANDOM_STRINGS)
+    )
+    random_ast_parser.add_argument(
+        '--max-int',
+        '-x',
+        dest    = 'max_int_lit',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_NUMBERS,
+        help    = 'maximum size of int literals (default: {})'.format(DEFAULT_MAX_RANDOM_NUMBERS)
+    )
+    random_ast_parser.add_argument(
+        '--meaningful',
+        '-m',
+        dest    = 'semantically_valid',
+        action  = 'store_true',
+        default = DEFAULT_SEMANTICALLY_VALID,
+        help    = 'generate semantically valid problems (default: {})'.format(DEFAULT_SEMANTICALLY_VALID)
+    )
+    random_ast_parser.add_argument(
+        '--literal-chance',
+        '-p',
+        dest    = 'literal_probability',
+        metavar = 'P',
+        type    = float,
+        default = DEFAULT_LITERAL_PROBABILITY,
+        help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
+    )
 
     # parse args
     args = global_parser.parse_args()
@@ -481,7 +561,7 @@ def main():
 
         # add the model-getting node if needed
         if produce_models is True:
-            generated.append(smt_model())
+            generated.append(smt_get_model())
 
         print(generate(generated, language))
 
