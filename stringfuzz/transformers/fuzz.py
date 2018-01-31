@@ -2,14 +2,14 @@
 The Fuzz transformer performs two types of transformations.
 The first is for literals. The second is for operators.
 
-Literals are fuzzed to similar literals. For example, 
+Literals are fuzzed to similar literals. For example,
 an integer literal x will be replaced with x+r where
-r is a random number between -x and x. String literals 
+r is a random number between -x and x. String literals
 are processed character by character. Each character can either
-remain in the updated string, be replaced by a random string, 
-or be deleted with equal probability.  
+remain in the updated string, be replaced by a random string,
+or be deleted with equal probability.
 
-Operators are fuzzed, with 50% probability, to a new operator 
+Operators are fuzzed, with 50% probability, to a new operator
 with the same function type. For example, regex * can be fuzzed
 to regex +.
 '''
@@ -27,7 +27,7 @@ __all__ = [
 
 class LitTransformer(ASTWalker):
     def __init__(self, ast, skip_re_range):
-        super(LitTransformer, self).__init__(ast)
+        super().__init__(ast)
         self.skip_re_range = skip_re_range
 
     def exit_literal(self, literal, parent):
@@ -52,7 +52,7 @@ class LitTransformer(ASTWalker):
                     #delete it
                     pass
             literal.value = new_val
-    
+
     def exit_expression(self, expr, parent):
         for type_list in REPLACEABLE_OPS:
             for i in range(len(expr.body)):

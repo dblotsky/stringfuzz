@@ -12,7 +12,7 @@ __all__ = [
 
 class MultiplyTransformer(ASTWalker):
     def __init__(self, ast, factor, skip_re_range):
-        super(MultiplyTransformer, self).__init__(ast)
+        super().__init__(ast)
         self.factor = factor
         self.skip_re_range = skip_re_range
 

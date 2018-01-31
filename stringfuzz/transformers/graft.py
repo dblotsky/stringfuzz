@@ -15,7 +15,7 @@ __all__ = [
 
 class GraftTransformer(ASTWalker):
     def __init__(self, ast, pairs):
-        super(GraftTransformer, self).__init__(ast)
+        super().__init__(ast)
         self.pairs = pairs
 
     def enter_expression(self, expr, parent):
@@ -28,7 +28,7 @@ class GraftTransformer(ASTWalker):
 
 class GraftFinder(ASTWalker):
     def __init__(self, ast, skip_str_to_re):
-        super(GraftFinder, self).__init__(ast)
+        super().__init__(ast)
         self.skip_str_to_re = skip_str_to_re
         #            expr, lit
         self.str  = [None, None]

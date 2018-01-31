@@ -143,7 +143,7 @@ def make_concats(depth, depth_type, solution, balanced, num_extracts, max_extrac
     definitions.extend([smt_declare_const(v) for v in constants])
 
     # add sat-check
-    expressions.append(smt_sat())
+    expressions.append(smt_check_sat())
 
     return definitions + expressions
 

@@ -17,7 +17,7 @@ Point = namedtuple('Point', ('expression', 'parent', 'depth', 'nesting'))
 class StatsWalker(ASTWalker):
 
     def __init__(self, ast):
-        super(StatsWalker, self).__init__(ast)
+        super().__init__(ast)
 
         # bookkeeping
         self.expr_stack    = []

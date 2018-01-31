@@ -83,7 +83,7 @@ def make_lengths(num_vars, min_length, max_length, num_concats, random_relations
             expressions.append(constraint)
 
     # add sat-check
-    expressions.append(smt_sat())
+    expressions.append(smt_check_sat())
 
     # create declarations
     declarations = [smt_declare_var(v) for v in variables]

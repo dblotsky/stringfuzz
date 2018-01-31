@@ -57,30 +57,32 @@ def make_string_lit_25(s, w):
     return Token('STRING_LIT', literal, s.match.start())
 
 # specific symbol tokens
-def make_meta_expr(s, w):        return Token('META_EXPR',   w, s.match.start())
-def make_declare_fun(s, w):      return Token('DECLARE_FUN', w, s.match.start())
-def make_define_fun(s, w):       return Token('DEFINE_FUN',  w, s.match.start())
-def make_contains(s, w):         return Token('CONTAINS',    w, s.match.start())
-def make_concat(s, w):           return Token('CONCAT',      w, s.match.start())
-def make_at(s, w):               return Token('AT',          w, s.match.start())
-def make_indexof_var_args(s, w): return Token('INDEXOFVAR',  w, s.match.start())
-def make_indexof_2_args(s, w):   return Token('INDEXOF',     w, s.match.start())
-def make_indexof_3_args(s, w):   return Token('INDEXOF2',    w, s.match.start())
-def make_prefixof(s, w):         return Token('PREFIXOF',    w, s.match.start())
-def make_suffixof(s, w):         return Token('SUFFIXOF',    w, s.match.start())
-def make_replace(s, w):          return Token('REPLACE',     w, s.match.start())
-def make_substring(s, w):        return Token('SUBSTRING',   w, s.match.start())
-def make_str_from_int(s, w):     return Token('FROM_INT',    w, s.match.start())
-def make_str_to_int(s, w):       return Token('TO_INT',      w, s.match.start())
-def make_length(s, w):           return Token('LENGTH',      w, s.match.start())
-def make_in_re(s, w):            return Token('IN_RE',       w, s.match.start())
-def make_str_to_re(s, w):        return Token('STR_TO_RE',   w, s.match.start())
-def make_re_allchar(s, w):       return Token('RE_ALLCHAR',  w, s.match.start())
-def make_re_concat(s, w):        return Token('RE_CONCAT',   w, s.match.start())
-def make_re_star(s, w):          return Token('RE_STAR',     w, s.match.start())
-def make_re_plus(s, w):          return Token('RE_PLUS',     w, s.match.start())
-def make_re_range(s, w):         return Token('RE_RANGE',    w, s.match.start())
-def make_re_union(s, w):         return Token('RE_UNION',    w, s.match.start())
+def make_meta_command(s, w):     return Token('META_COMMAND',  w, s.match.start())
+def make_declare_fun(s, w):      return Token('DECLARE_FUN',   w, s.match.start())
+def make_define_fun(s, w):       return Token('DEFINE_FUN',    w, s.match.start())
+def make_declare_const(s, w):    return Token('DECLARE_CONST', w, s.match.start())
+def make_assert(s, w):           return Token('ASSERT',        w, s.match.start())
+def make_contains(s, w):         return Token('CONTAINS',      w, s.match.start())
+def make_concat(s, w):           return Token('CONCAT',        w, s.match.start())
+def make_at(s, w):               return Token('AT',            w, s.match.start())
+def make_indexof_var_args(s, w): return Token('INDEXOFVAR',    w, s.match.start())
+def make_indexof_2_args(s, w):   return Token('INDEXOF',       w, s.match.start())
+def make_indexof_3_args(s, w):   return Token('INDEXOF2',      w, s.match.start())
+def make_prefixof(s, w):         return Token('PREFIXOF',      w, s.match.start())
+def make_suffixof(s, w):         return Token('SUFFIXOF',      w, s.match.start())
+def make_replace(s, w):          return Token('REPLACE',       w, s.match.start())
+def make_substring(s, w):        return Token('SUBSTRING',     w, s.match.start())
+def make_str_from_int(s, w):     return Token('FROM_INT',      w, s.match.start())
+def make_str_to_int(s, w):       return Token('TO_INT',        w, s.match.start())
+def make_length(s, w):           return Token('LENGTH',        w, s.match.start())
+def make_in_re(s, w):            return Token('IN_RE',         w, s.match.start())
+def make_str_to_re(s, w):        return Token('STR_TO_RE',     w, s.match.start())
+def make_re_allchar(s, w):       return Token('RE_ALLCHAR',    w, s.match.start())
+def make_re_concat(s, w):        return Token('RE_CONCAT',     w, s.match.start())
+def make_re_star(s, w):          return Token('RE_STAR',       w, s.match.start())
+def make_re_plus(s, w):          return Token('RE_PLUS',       w, s.match.start())
+def make_re_range(s, w):         return Token('RE_RANGE',      w, s.match.start())
+def make_re_union(s, w):         return Token('RE_UNION',      w, s.match.start())
 
 # constants
 ALPHABET     = string.digits + string.ascii_letters + string.punctuation
@@ -102,20 +104,20 @@ SMT_20_TOKENS = [
     (r'or',  make_sym),
 
     # commands
-    (r'set-logic',        make_meta_expr),
-    (r'set-option',       make_meta_expr),
-    (r'set-info',         make_meta_expr),
+    (r'set-logic',        make_meta_command),
+    (r'set-option',       make_meta_command),
+    (r'set-info',         make_meta_command),
     (r'declare-sort',     make_sym),
     (r'define-sort',      make_sym),
     (r'declare-fun',      make_declare_fun),
     (r'define-fun',       make_define_fun),
     (r'declare-const',    make_sym),
-    (r'define-const',     make_sym),
+    (r'define-const',     make_declare_const),
     (r'declare-variable', make_sym),
     (r'define-variable',  make_sym),
     (r'push',             make_sym),
     (r'pop',              make_sym),
-    (r'assert',           make_sym),
+    (r'assert',           make_assert),
     (r'check-sat',        make_sym),
     (r'get-assertions',   make_sym),
     (r'get-proof',        make_sym),

@@ -11,12 +11,12 @@ __all__ = [
 
 class ReverseTransformer(ASTWalker):
     def __init__(self, ast):
-        super(ReverseTransformer, self).__init__(ast)
+        super().__init__(ast)
 
     def exit_literal(self, literal, parent):
         if isinstance(literal, StringLitNode):
             literal.value = literal.value[::-1]
-    
+
     def exit_expression(self, expr, parent):
         if isinstance(expr, (ConcatNode, ReConcatNode)):
             expr.body = reversed(expr.body)

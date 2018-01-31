@@ -2,7 +2,7 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
-from stringfuzz.util import join_terms_with
+from stringfuzz.util import join_terms_with, random_string, coin_toss
 
 __all__ = [
     'regex',
@@ -44,9 +44,6 @@ _literal_min  = 1
 _literal_max  = 1
 
 # helpers
-def random_string(length):
-    return ''.join(random.choice(ALPHABET) for i in range(length))
-
 def fill_string(character, length):
     return character * length
 
@@ -55,9 +52,6 @@ def get_char_and_advance():
     character = ALPHABET[_cursor]
     _cursor   = (_cursor + 1) % len(ALPHABET)
     return character
-
-def coin_toss():
-    return random.choice([True, False])
 
 def make_regex_string(min_length, max_length):
     global _literal_type
@@ -217,7 +211,7 @@ def make_regex(
         expressions.append(smt_assert(equality))
 
     # add sat check
-    expressions.append(smt_sat())
+    expressions.append(smt_check_sat())
 
     # create declarations
     declarations = [
