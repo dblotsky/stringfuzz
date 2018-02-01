@@ -1,12 +1,13 @@
 Description
 ===========
 
-A collection of tools to manipulate and generate SMT-LIB 2.x problems. There
-are three main tools:
+A collection of tools to manipulate and generate SMT-LIB 2.x problem instances.
+There are four main tools:
 
-- `stringfuzzg` to generate new problems
-- `stringfuzzx` to transform existing problems
-- `stringstats` to measure properties of problems
+- `stringfuzzg` to generate new instances
+- `stringfuzzx` to transform existing instances
+- `stringstats` to measure properties of instances
+- `stringmerge` to merge several instances into one
 
 Installing
 ==========

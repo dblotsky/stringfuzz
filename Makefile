@@ -28,6 +28,7 @@ develop: test
 	python3 setup.py develop
 
 install:
+	python3 -m pip install --upgrade pip setuptools wheel
 	python3 setup.py install
 
 uninstall:
