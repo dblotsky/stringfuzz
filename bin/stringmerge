@@ -6,65 +6,47 @@ Merge two existing problems.
 
 import sys
 import argparse
+import random
 
-from stringfuzz.ast import ExpressionNode, SortNode, IdentifierNode, FunctionDeclarationNode, SortedVarNode
-from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.constants import LANGUAGES, SMT_25_STRING
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse, ParsingError
-from stringfuzz.smt import smt_string_logic, smt_sat
+from stringfuzz.smt import smt_string_logic, smt_check_sat
+from stringfuzz.ast import SettingNode, ExpressionNode, MetaCommandNode, GenericExpressionNode
+from stringfuzz.mergers import simple
+
+#constants
+SIMPLE = 'simple'
+
+MERGERS = {
+    SIMPLE: simple
+}
 
 # defaults
 DEFAULT_RENAME_IDS = False
+DEFAULT_SEED       = 0
+DEFAULT_RANDOM     = False
 
-# constants
-DECLARE_CONST = "declare-const"
+GET_MODEL     = "get-model"
+GET_INFO      = "get-info"
+EXPR_TO_STRIP = [GET_MODEL, GET_INFO]
+CHECK_SAT     = "check-sat"
+GEN_TO_STRIP  = [CHECK_SAT]
 
-# helper functions 
-def assertion(expr):
-    if isinstance(expr, ExpressionNode):
-        symbol = expr.symbol
-        if isinstance(symbol, IdentifierNode) and symbol.name == "assert":
-            return True
-    return False
-
-def declaration(expr):
-    if isinstance(expr, (FunctionDeclarationNode, SortedVarNode)):
-        return True
-    if isinstance(expr, ExpressionNode):
-        symbol = expr.symbol
-        if isinstance(symbol, IdentifierNode) and symbol.name == DECLARE_CONST:
-            return True
-    return False
-
-def sort(expr):
-    return isinstance(expr, SortNode)
-
-# helper class
-class RenameIDWalker(ASTWalker):
-    def __init__(self, ast, suffix):
-        super(RenameIDWalker, self).__init__(ast)
-        self.suffix = str(suffix)
-
-    def exit_identifier(self, identifier, parent):
-        identifier.name += self.suffix
-
-# most important function
-def merge(asts, rename_ids):
-    if rename_ids:
-        for i in range(len(asts)):
-            asts[i] = RenameIDWalker(asts[i], i).walk()
-
-    flattened    = [expr for ast in asts for expr in ast]
-    combined     = set(flattened)
-    declarations = list(filter(declaration, combined))
-    sorts        = list(filter(sort, combined))
-    assertions   = list(filter(assertion, combined))
-    transformed  = [smt_string_logic()] + declarations + sorts + assertions + [smt_sat()]
-    return transformed
+def should_keep(node):
+    if isinstance(node, SettingNode):
+        return False
+    if isinstance(node, MetaCommandNode):
+        return False
+    if isinstance(node, ExpressionNode):
+        if node.symbol in EXPR_TO_STRIP:
+            return False
+    if isinstance(node, GenericExpressionNode):
+        if node.symbol.name in GEN_TO_STRIP:
+            return False
+    return True
 
 # entry point
-
 def main():
 
     # create arg parser
@@ -94,7 +76,32 @@ def main():
         default = SMT_25_STRING,
         help    = 'output language (default: {})'.format(SMT_25_STRING)
     )
-    global_parser.add_argument(
+    seed_group = global_parser.add_mutually_exclusive_group()
+    seed_group.add_argument(
+        '--seed',
+        '-s',
+        dest    = 'seed',
+        metavar = 'S',
+        type    = int,
+        default = DEFAULT_SEED,
+        help    = 'seed for random number generator (default: {})'.format(DEFAULT_SEED)
+    )
+    seed_group.add_argument(
+        '--random',
+        '-r',
+        dest    = 'random',
+        action  = 'store_true',
+        default = DEFAULT_RANDOM,
+        help    = 'seed the random number generator with the current time (default: {})'.format(DEFAULT_RANDOM)
+    )
+
+    # get subparsers
+    subparsers = global_parser.add_subparsers(dest='merger', help='merger choice')
+    subparsers.required = True
+
+    # simple transformer
+    simple_parser = subparsers.add_parser(SIMPLE, help='simple transformer')
+    simple_parser.add_argument(
         '--rename',
         dest    = 'rename_ids',
         action  = 'store_true',
@@ -105,16 +112,29 @@ def main():
     # parse args
     args = global_parser.parse_args()
 
+    # get the merger function based on args
+    merger_name = args.merger
+    merger      = MERGERS[merger_name]
+
     # get general args
     files           = args.files
     input_language  = args.input_language
     output_language = args.output_language
-    
+
+    # seed the RNG
+    if args.random is True:
+        random.seed()
+    else:
+        random.seed(args.seed)
+
     # get args as a dict and pop general args
     merge_args = vars(args)
     merge_args.pop('files')
     merge_args.pop('input_language')
     merge_args.pop('output_language')
+    merge_args.pop('seed')
+    merge_args.pop('random')
+    merge_args.pop('merger')
 
     # read input
     raw_in = [f.read() for f in files]
@@ -126,11 +146,15 @@ def main():
         print(e, file=sys.stderr)
         return 1
 
+    # filter out suppressed expressions
+    asts = [list(filter(should_keep, ast)) for ast in asts]
     # merge the two ASTs into a new AST
-    transformed = merge(asts, **merge_args)
+    merged = merger(asts, **merge_args)
+    # add back the logic and get-sat
+    merged = [smt_string_logic()] + merged + [smt_check_sat()]
 
     # transformers produce ASTs
-    print(generate(transformed, output_language))
+    print(generate(merged, output_language))    
 
 if __name__ == '__main__':
     main()
