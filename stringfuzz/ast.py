@@ -263,7 +263,7 @@ class _QuaternaryExpression(_SortedExpressionNode):
 
 class _NaryExpression(_SortedExpressionNode):
     def __init__(self, *args):
-        super().__init__(args)
+        super().__init__(list(args))
 
 class _RelationExpressionNode(_BinaryExpression):
     _signature = [INT_SORT, INT_SORT]

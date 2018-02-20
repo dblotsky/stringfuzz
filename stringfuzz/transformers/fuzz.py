@@ -25,41 +25,63 @@ __all__ = [
     'fuzz',
 ]
 
+def fuzz_char(c):
+
+    # with equal probability: replace, keep, add, or delete a character
+    operation = random.randint(1,4)
+
+    # replace it
+    if operation == 1:
+        return random_text(1)
+
+    # keep it the same
+    if operation == 2:
+        return c
+
+    # add a new character
+    if operation == 3:
+        return c + random_text(1)
+
+    # delete it
+    return ''
+
+def fuzz_string(string):
+    return ''.join(fuzz_char(c) for c in string)
+
 class LitTransformer(ASTWalker):
     def __init__(self, ast, skip_re_range):
         super().__init__(ast)
         self.skip_re_range = skip_re_range
 
     def exit_literal(self, literal, parent):
+
+        # int literal
         if isinstance(literal, IntLitNode):
+
             # maintain sign of literal
             literal.value += random.randint(-literal.value, literal.value)
+
+        # string literal
         elif isinstance(literal, StringLitNode):
+
+            # skip children of regex range if required
             if isinstance(parent, ReRangeNode) and self.skip_re_range:
                 return
-            new_val = ""
-            for c in literal.value:
-                # With equal probability replace, keep, or delete.
-                choice = random.randint(1,3)
-                if choice == 1:
-                    # replace it with a sequence
-                    length = len(literal.value)
-                    length = random.randint(1, length)
-                    new_val += random_text(length)
-                elif choice == 2:
-                    new_val += c
-                else:
-                    #delete it
-                    pass
+
+            # create new value for literal
+            new_val = fuzz_string(literal.value)
+
+            # replace old value with new value
             literal.value = new_val
 
     def exit_expression(self, expr, parent):
         for type_list in REPLACEABLE_OPS:
             for i in range(len(expr.body)):
-                # Check if its a replaceable type, if so, randomly replace it
+
+                # check if it's a replaceable type; if so, randomly replace it
                 replaceable = [isinstance(expr.body[i], C) for C in type_list]
                 if any(replaceable):
-                    choice = random.choice(type_list)
+                    choice       = random.choice(type_list)
                     expr.body[i] = choice(*expr.body[i].body)
 
 # public API
