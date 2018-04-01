@@ -51,6 +51,7 @@ N_ARY_NONTERMINALS = [
     OrNode,
     EqualNode,
     ReUnionNode,
+    ReInterNode,
 ]
 
 EXPRESSION_SORTS = DECLARABLE_SORTS + [REGEX_SORT]

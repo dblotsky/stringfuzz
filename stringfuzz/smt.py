@@ -33,6 +33,7 @@ __all__ = [
     'smt_regex_plus',
     'smt_regex_range',
     'smt_regex_union',
+    'smt_regex_inter',
     'smt_and',
     'smt_or',
     'smt_not',
@@ -138,6 +139,9 @@ def smt_regex_star(a):
 
 def smt_regex_union(a, b):
     return ReUnionNode(a, b)
+
+def smt_regex_inter(a, b):
+    return ReInterNode(a, b)
 
 # commands
 def smt_assert(exp):

@@ -334,7 +334,6 @@ def expect_expression(s):
         return StrToReNode(a)
 
     if s.accept('RE_CONCAT'):
-
         # first two args are mandatory
         a = expect_arg(s)
         b = expect_arg(s)
@@ -361,7 +360,6 @@ def expect_expression(s):
         return ReRangeNode(a, b)
 
     if s.accept('RE_UNION'):
-
         # first two args are mandatory
         a = expect_arg(s)
         b = expect_arg(s)
@@ -369,10 +367,23 @@ def expect_expression(s):
         # more args are optional
         other_args = repeat_star(s, accept_arg)
 
-        # re-format n-ary concats into binary concats
+        # re-format n-ary unions into binary unions
         union = join_terms_with([a, b] + other_args, ReUnionNode)
 
         return union
+
+    if s.accept('RE_INTER'):
+        # first two args are mandatory
+        a = expect_arg(s)
+        b = expect_arg(s)
+
+        # more args are optional
+        other_args = repeat_star(s, accept_arg)
+
+        # re-format n-ary intersections into binary intersections
+        inter = join_terms_with([a, b] + other_args, ReInterNode)
+
+        return inter
 
     token = s.peek()
     if s.accept('META_COMMAND'):

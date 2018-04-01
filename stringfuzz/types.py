@@ -5,8 +5,8 @@ Groupings operators by types for transformers.
 from stringfuzz.ast import *
 
 # Groups of replaceable_OPS operators by Function Type
-# ARG_...RET 
-# e.g. STR_STR_STR means takes two strings and returns a string 
+# ARG_...RET
+# e.g. STR_STR_STR means takes two strings and returns a string
 STR_STR_STR     = [ConcatNode]
 STR_STR_BOOL    = [ContainsNode, PrefixOfNode, SuffixOfNode]
 STR_INT_STR     = [AtNode]
@@ -18,7 +18,7 @@ STR_INT_INT_STR = [SubstringNode]
 INT_STR         = [FromIntNode]
 STR_RX_BOOL     = [InReNode]
 STR_RX          = [StrToReNode]
-RX_RX_RX        = [ReConcatNode, ReUnionNode]
+RX_RX_RX        = [ReConcatNode, ReUnionNode, ReInterNode]
 RX_RX           = [ReStarNode, RePlusNode]
 INT_INT_RX      = [ReRangeNode]
 

@@ -35,6 +35,8 @@ MEMBERSHIP_TYPES = [
     MEMBER_RANDOM,
 ]
 
+
+
 # global config
 # NOTE:
 #      using globals because it's annoying to pass around a bunch of variables
@@ -77,7 +79,7 @@ def make_random_term(depth):
     subterm = make_random_term(depth - 1)
 
     # randomly pick a recursive regex term
-    random_result = random.randint(0, 2)
+    random_result = random.randint(0, 3)
 
     if random_result == 0:
         return smt_regex_star(subterm)
@@ -88,6 +90,10 @@ def make_random_term(depth):
     elif random_result == 2:
         second_subterm = make_random_term(depth - 1)
         return smt_regex_union(subterm, second_subterm)
+
+    elif random_result == 3:
+        second_subterm = make_random_term(depth - 1)
+        return smt_regex_inter(subterm, second_subterm)
 
 def make_random_terms(num_terms, depth):
     terms = [make_random_term(depth) for i in range(num_terms)]
@@ -138,16 +144,19 @@ def make_regex(
 
     # check args
     if num_regexes < 1:
-        raise ValueError('number of regexes must be greater than 1')
+        raise ValueError('number of regexes must be greater than 0')
 
     if num_terms < 1:
-        raise ValueError('number of terms must be greater than 1')
+        raise ValueError('number of terms must be greater than 0')
 
     if literal_min < 1:
-        raise ValueError('min literal length must be greater than 1')
+        raise ValueError('min literal length must be greater than 0')
 
     if literal_max < 1:
-        raise ValueError('min literal length must be greater than 1')
+        raise ValueError('max literal length must be greater than 0')
+
+    if literal_max < literal_min:
+        raise ValueError('max literal length must not be less than min literal length')
 
     if term_depth < 0:
         raise ValueError('depths of terms must not be less than 0')
