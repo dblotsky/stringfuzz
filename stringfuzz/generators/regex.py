@@ -1,4 +1,5 @@
 import random
+import re
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
@@ -12,6 +13,13 @@ __all__ = [
     'MEMBER_NOT_IN',
     'MEMBER_ALTERNATING',
     'MEMBER_RANDOM',
+    'OPERATOR_STAR',
+    'OPERATOR_PLUS',
+    'OPERATOR_UNION',
+    'OPERATOR_INTER',
+    'OPERATOR_CONCAT',
+    'OPERATOR_ALTERNATING',
+    'OPERATOR_RANDOM',
 ]
 
 # constants
@@ -35,7 +43,27 @@ MEMBERSHIP_TYPES = [
     MEMBER_RANDOM,
 ]
 
+OPERATOR_STAR   = 's'
+OPERATOR_PLUS   = 'p'
+OPERATOR_UNION  = 'u'
+OPERATOR_INTER  = 'i'
+OPERATOR_CONCAT = 'c'
 
+OPERATORS = [
+    OPERATOR_STAR,
+    OPERATOR_PLUS,
+    OPERATOR_UNION,
+    OPERATOR_INTER,
+    OPERATOR_CONCAT,
+]
+
+OPERATOR_ALTERNATING = 'alternating'
+OPERATOR_RANDOM      = 'random'
+
+OPERATOR_TYPES = [
+    OPERATOR_ALTERNATING,
+    OPERATOR_RANDOM,
+]
 
 # global config
 # NOTE:
@@ -73,27 +101,32 @@ def make_regex_string(min_length, max_length):
     return smt_str_to_re(smt_str_lit(string))
 
 def make_random_term(depth):
+    global _current_operator
+
     if depth == 0:
         return make_regex_string(_literal_min, _literal_max)
 
     subterm = make_random_term(depth - 1)
 
-    # randomly pick a recursive regex term
-    random_result = random.randint(0, 3)
+    if _operator_type == OPERATOR_ALTERNATING:
+        operator = _current_operator
+        _current_operator = next_operator(_current_operator)
+    else:
+        operator = random.choice(_operator_list)
 
-    if random_result == 0:
+    if operator == OPERATOR_STAR:
         return smt_regex_star(subterm)
-
-    elif random_result == 1:
+    elif operator == OPERATOR_PLUS:
         return smt_regex_plus(subterm)
-
-    elif random_result == 2:
+    elif operator == OPERATOR_UNION:
         second_subterm = make_random_term(depth - 1)
         return smt_regex_union(subterm, second_subterm)
-
-    elif random_result == 3:
+    elif operator == OPERATOR_INTER:
         second_subterm = make_random_term(depth - 1)
         return smt_regex_inter(subterm, second_subterm)
+    elif operator == OPERATOR_CONCAT:
+        second_subterm = make_random_term(depth - 1)
+        return smt_regex_concat(subterm, second_subterm)
 
 def make_random_terms(num_terms, depth):
     terms = [make_random_term(depth) for i in range(num_terms)]
@@ -104,6 +137,9 @@ def toggle_membership_type(t):
     if t == MEMBER_IN:
         return MEMBER_NOT_IN
     return MEMBER_IN
+
+def next_operator(o):
+    return _operator_list[(_operator_list.index(o) + 1) % len(_operator_list)]
 
 def make_constraint(variable, r):
     global _configured_membership
@@ -137,9 +173,11 @@ def make_regex(
     term_depth,
     literal_type,
     membership_type,
-    reset_alphabet=False,
-    max_var_length=None,
-    min_var_length=None,
+    reset_alphabet,
+    max_var_length,
+    min_var_length,
+    operators,
+    operator_type,
 ):
 
     # check args
@@ -173,6 +211,14 @@ def make_regex(
     if max_var_length is not None and max_var_length < 0:
         raise ValueError('max variable length must not be less than 0')
 
+    operator_re = re.compile('^[{}]+$'.format(''.join(OPERATORS)))
+    if not operator_re.match(operators):
+        raise ValueError('invalid operators: {!r}'.format(operators))
+
+    if operator_type not in OPERATOR_TYPES:
+        raise ValueError('unknown operator type: {!r}'.format(operator_type))
+
+
     # set globals
     global _cursor
     global _literal_type
@@ -180,6 +226,9 @@ def make_regex(
     global _current_membership
     global _literal_min
     global _literal_max
+    global _operator_list
+    global _current_operator
+    global _operator_type
 
     _cursor                = 0
     _literal_type          = literal_type
@@ -187,6 +236,14 @@ def make_regex(
     _current_membership    = _configured_membership
     _literal_min           = literal_min
     _literal_max           = literal_max
+    _operator_list         = []
+    _operator_type         = operator_type
+
+    # parse operator list in order, in case user wants a custom alternation order
+    for c in operators:
+        if c not in _operator_list:
+            _operator_list.append(c)
+    _current_operator = _operator_list[0]
 
     # create variable
     matched = smt_new_var()
