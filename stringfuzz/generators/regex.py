@@ -100,32 +100,31 @@ def make_regex_string(min_length, max_length):
 
     return smt_str_to_re(smt_str_lit(string))
 
-def make_random_term(depth):
-    global _current_operator
-
+def make_random_term(depth, operator=None):
     if depth == 0:
         return make_regex_string(_literal_min, _literal_max)
 
-    subterm = make_random_term(depth - 1)
-
     if _operator_type == OPERATOR_ALTERNATING:
-        operator = _current_operator
-        _current_operator = next_operator(_current_operator)
+        if operator == None:
+            operator = _operator_list[0]
     else:
         operator = random.choice(_operator_list)
+
+    # alternates operators on each level, ignored if not in alternating mode
+    subterm = make_random_term(depth - 1, next_operator(operator))
 
     if operator == OPERATOR_STAR:
         return smt_regex_star(subterm)
     elif operator == OPERATOR_PLUS:
         return smt_regex_plus(subterm)
     elif operator == OPERATOR_UNION:
-        second_subterm = make_random_term(depth - 1)
+        second_subterm = make_random_term(depth - 1, next_operator(operator))
         return smt_regex_union(subterm, second_subterm)
     elif operator == OPERATOR_INTER:
-        second_subterm = make_random_term(depth - 1)
+        second_subterm = make_random_term(depth - 1, next_operator(operator))
         return smt_regex_inter(subterm, second_subterm)
     elif operator == OPERATOR_CONCAT:
-        second_subterm = make_random_term(depth - 1)
+        second_subterm = make_random_term(depth - 1, next_operator(operator))
         return smt_regex_concat(subterm, second_subterm)
 
 def make_random_terms(num_terms, depth):
@@ -227,7 +226,6 @@ def make_regex(
     global _literal_min
     global _literal_max
     global _operator_list
-    global _current_operator
     global _operator_type
 
     _cursor                = 0
@@ -243,7 +241,6 @@ def make_regex(
     for c in operators:
         if c not in _operator_list:
             _operator_list.append(c)
-    _current_operator = _operator_list[0]
 
     # create variable
     matched = smt_new_var()
