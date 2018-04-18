@@ -360,6 +360,7 @@ def expect_expression(s):
         return ReRangeNode(a, b)
 
     if s.accept('RE_UNION'):
+
         # first two args are mandatory
         a = expect_arg(s)
         b = expect_arg(s)
@@ -373,6 +374,7 @@ def expect_expression(s):
         return union
 
     if s.accept('RE_INTER'):
+
         # first two args are mandatory
         a = expect_arg(s)
         b = expect_arg(s)

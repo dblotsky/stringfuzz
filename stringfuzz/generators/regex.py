@@ -49,7 +49,7 @@ OPERATOR_UNION  = 'u'
 OPERATOR_INTER  = 'i'
 OPERATOR_CONCAT = 'c'
 
-OPERATORS = [
+OPERATOR_LIST = [
     OPERATOR_STAR,
     OPERATOR_PLUS,
     OPERATOR_UNION,
@@ -100,35 +100,42 @@ def make_regex_string(min_length, max_length):
 
     return smt_str_to_re(smt_str_lit(string))
 
-def make_random_term(depth, operator=None):
+def make_random_term(depth, operator_index):
     if depth == 0:
         return make_regex_string(_literal_min, _literal_max)
 
     if _operator_type == OPERATOR_ALTERNATING:
-        if operator == None:
-            operator = _operator_list[0]
+        next_operator_index = operator_index + 1
     else:
-        operator = random.choice(_operator_list)
+        next_operator_index = random.randrange(len(_operator_list))
 
-    # alternates operators on each level, ignored if not in alternating mode
-    subterm = make_random_term(depth - 1, next_operator(operator))
+    operator = get_operator_at_index(operator_index)
+    subterm = make_random_term(depth - 1, next_operator_index)
 
     if operator == OPERATOR_STAR:
         return smt_regex_star(subterm)
-    elif operator == OPERATOR_PLUS:
+
+    if operator == OPERATOR_PLUS:
         return smt_regex_plus(subterm)
-    elif operator == OPERATOR_UNION:
-        second_subterm = make_random_term(depth - 1, next_operator(operator))
+
+    if operator == OPERATOR_UNION:
+        second_subterm = make_random_term(depth - 1, next_operator_index)
         return smt_regex_union(subterm, second_subterm)
-    elif operator == OPERATOR_INTER:
-        second_subterm = make_random_term(depth - 1, next_operator(operator))
+
+    if operator == OPERATOR_INTER:
+        second_subterm = make_random_term(depth - 1, next_operator_index)
         return smt_regex_inter(subterm, second_subterm)
-    elif operator == OPERATOR_CONCAT:
-        second_subterm = make_random_term(depth - 1, next_operator(operator))
+
+    if operator == OPERATOR_CONCAT:
+        second_subterm = make_random_term(depth - 1, next_operator_index)
         return smt_regex_concat(subterm, second_subterm)
 
 def make_random_terms(num_terms, depth):
-    terms = [make_random_term(depth) for i in range(num_terms)]
+    if _operator_type == OPERATOR_ALTERNATING:
+        terms = [make_random_term(depth, 0) for i in range(num_terms)]
+    else:
+        terms = [make_random_term(depth, random.randrange(len(_operator_list))) for i in range(num_terms)]
+
     regex = join_terms_with(terms, smt_regex_concat)
     return regex
 
@@ -137,8 +144,8 @@ def toggle_membership_type(t):
         return MEMBER_NOT_IN
     return MEMBER_IN
 
-def next_operator(o):
-    return _operator_list[(_operator_list.index(o) + 1) % len(_operator_list)]
+def get_operator_at_index(index):
+    return _operator_list[index % len(_operator_list)]
 
 def make_constraint(variable, r):
     global _configured_membership
@@ -210,13 +217,11 @@ def make_regex(
     if max_var_length is not None and max_var_length < 0:
         raise ValueError('max variable length must not be less than 0')
 
-    operator_re = re.compile('^[{}]+$'.format(''.join(OPERATORS)))
-    if not operator_re.match(operators):
+    if len(operators) < 1 or any(map(lambda x: x not in OPERATOR_LIST, operators)):
         raise ValueError('invalid operators: {!r}'.format(operators))
 
     if operator_type not in OPERATOR_TYPES:
         raise ValueError('unknown operator type: {!r}'.format(operator_type))
-
 
     # set globals
     global _cursor

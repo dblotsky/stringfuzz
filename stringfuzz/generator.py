@@ -247,10 +247,7 @@ def generate_expr(e, language):
             raise NotSupported(e, language)
 
     elif isinstance(e, ReInterNode):
-        if language == SMT_20_STRING:
-            # I don't think intersection is even defined for 2.0
-            components.append('RegexInter')
-        elif language == SMT_25_STRING:
+        if language == SMT_25_STRING:
             components.append('re.inter')
         else:
             raise NotSupported(e, language)
