@@ -10,7 +10,7 @@ import argparse
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
 from stringfuzz.parser import parse
 from stringfuzz.analyser import analyse
-from stringfuzz.ast import StringLitNode
+from stringfuzz.ast import StringLitNode, ConcatNode
 
 def main():
 
@@ -48,6 +48,7 @@ def main():
     # get stats
     points, variables, literals = analyse(expressions)
     str_literals = [l for l in literals if isinstance(l, StringLitNode)]
+    concat_points = [p for p in points if isinstance(p.expression, ConcatNode)]
 
     # compute stats
     if len(str_literals) > 1:
@@ -56,19 +57,22 @@ def main():
         avg_literal_length = 0
 
     if len(points) > 1:
-        max_depth   = max(p.depth for p in points)
-        max_nesting = max(p.nesting for p in points if p.expression.symbol == 'Concat')
+        max_depth = max(p.depth for p in points)
     else:
-        max_depth   = 0
+        max_depth = 0
+
+    if len(concat_points) > 1:
+        max_nesting = max(p.nesting for p in points if isinstance(p.expression, ConcatNode))
+    else:
         max_nesting = 0
 
     # print stats
     print('stats')
     print('=========')
-    print('# of expressions:         ', len(points))
-    print('# of variables:           ', len(variables))
-    print('# of literals:            ', len(literals))
-    print('# of string literals:     ', len(str_literals))
+    print('num. of expressions:      ', len(points))
+    print('num. of variables:        ', len(variables))
+    print('num. of literals:         ', len(literals))
+    print('num. of string literals:  ', len(str_literals))
     print('avg. length of literals:  ', '{:.4f}'.format(avg_literal_length))
     print('max expression depth:     ', max_depth)
     print('max concat nesting level: ', max_nesting)

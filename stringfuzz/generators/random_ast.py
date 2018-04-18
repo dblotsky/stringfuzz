@@ -161,9 +161,9 @@ def make_random_ast(num_vars, num_asserts, depth, max_terms, max_str_lit_length,
     asserts = [generate_assert(variables, depth) for i in range(num_asserts)]
 
     # add check-sat
-    asserts.append(CheckSatNode())
+    expressions = asserts + [CheckSatNode()]
 
-    return declarations + asserts
+    return declarations + expressions
 
 # public API
 def random_ast(*args, **kwargs):
