@@ -90,7 +90,11 @@ def with_spaces(terms):
 
 # data structures
 class _ASTNode(object):
-    pass
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+    def __hash__(self):
+        return hash(repr(self))
 
 # "atoms"
 class SortNode(_ASTNode):
