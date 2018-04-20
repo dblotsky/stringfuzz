@@ -145,6 +145,8 @@ def toggle_membership_type(t):
     return MEMBER_IN
 
 def get_operator_at_index(index):
+    global _operator_list
+
     return _operator_list[index % len(_operator_list)]
 
 def make_constraint(variable, r):
