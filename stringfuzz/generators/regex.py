@@ -1,4 +1,5 @@
 import random
+import re
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.smt import *
@@ -12,6 +13,13 @@ __all__ = [
     'MEMBER_NOT_IN',
     'MEMBER_ALTERNATING',
     'MEMBER_RANDOM',
+    'OPERATOR_STAR',
+    'OPERATOR_PLUS',
+    'OPERATOR_UNION',
+    'OPERATOR_INTER',
+    'OPERATOR_CONCAT',
+    'OPERATOR_ALTERNATING',
+    'OPERATOR_RANDOM',
 ]
 
 # constants
@@ -33,6 +41,28 @@ MEMBERSHIP_TYPES = [
     MEMBER_NOT_IN,
     MEMBER_ALTERNATING,
     MEMBER_RANDOM,
+]
+
+OPERATOR_STAR   = 's'
+OPERATOR_PLUS   = 'p'
+OPERATOR_UNION  = 'u'
+OPERATOR_INTER  = 'i'
+OPERATOR_CONCAT = 'c'
+
+OPERATOR_LIST = [
+    OPERATOR_STAR,
+    OPERATOR_PLUS,
+    OPERATOR_UNION,
+    OPERATOR_INTER,
+    OPERATOR_CONCAT,
+]
+
+OPERATOR_ALTERNATING = 'alternating'
+OPERATOR_RANDOM      = 'random'
+
+OPERATOR_TYPES = [
+    OPERATOR_ALTERNATING,
+    OPERATOR_RANDOM,
 ]
 
 # global config
@@ -70,27 +100,42 @@ def make_regex_string(min_length, max_length):
 
     return smt_str_to_re(smt_str_lit(string))
 
-def make_random_term(depth):
+def make_random_term(depth, operator_index):
     if depth == 0:
         return make_regex_string(_literal_min, _literal_max)
 
-    subterm = make_random_term(depth - 1)
+    if _operator_type == OPERATOR_ALTERNATING:
+        next_operator_index = operator_index + 1
+    else:
+        next_operator_index = random.randrange(len(_operator_list))
 
-    # randomly pick a recursive regex term
-    random_result = random.randint(0, 2)
+    operator = get_operator_at_index(operator_index)
+    subterm = make_random_term(depth - 1, next_operator_index)
 
-    if random_result == 0:
+    if operator == OPERATOR_STAR:
         return smt_regex_star(subterm)
 
-    elif random_result == 1:
+    if operator == OPERATOR_PLUS:
         return smt_regex_plus(subterm)
 
-    elif random_result == 2:
-        second_subterm = make_random_term(depth - 1)
+    if operator == OPERATOR_UNION:
+        second_subterm = make_random_term(depth - 1, next_operator_index)
         return smt_regex_union(subterm, second_subterm)
 
+    if operator == OPERATOR_INTER:
+        second_subterm = make_random_term(depth - 1, next_operator_index)
+        return smt_regex_inter(subterm, second_subterm)
+
+    if operator == OPERATOR_CONCAT:
+        second_subterm = make_random_term(depth - 1, next_operator_index)
+        return smt_regex_concat(subterm, second_subterm)
+
 def make_random_terms(num_terms, depth):
-    terms = [make_random_term(depth) for i in range(num_terms)]
+    if _operator_type == OPERATOR_ALTERNATING:
+        terms = [make_random_term(depth, 0) for i in range(num_terms)]
+    else:
+        terms = [make_random_term(depth, random.randrange(len(_operator_list))) for i in range(num_terms)]
+
     regex = join_terms_with(terms, smt_regex_concat)
     return regex
 
@@ -98,6 +143,11 @@ def toggle_membership_type(t):
     if t == MEMBER_IN:
         return MEMBER_NOT_IN
     return MEMBER_IN
+
+def get_operator_at_index(index):
+    global _operator_list
+
+    return _operator_list[index % len(_operator_list)]
 
 def make_constraint(variable, r):
     global _configured_membership
@@ -131,23 +181,28 @@ def make_regex(
     term_depth,
     literal_type,
     membership_type,
-    reset_alphabet=False,
-    max_var_length=None,
-    min_var_length=None,
+    reset_alphabet,
+    max_var_length,
+    min_var_length,
+    operators,
+    operator_type,
 ):
 
     # check args
     if num_regexes < 1:
-        raise ValueError('number of regexes must be greater than 1')
+        raise ValueError('number of regexes must be greater than 0')
 
     if num_terms < 1:
-        raise ValueError('number of terms must be greater than 1')
+        raise ValueError('number of terms must be greater than 0')
 
     if literal_min < 1:
-        raise ValueError('min literal length must be greater than 1')
+        raise ValueError('min literal length must be greater than 0')
 
     if literal_max < 1:
-        raise ValueError('min literal length must be greater than 1')
+        raise ValueError('max literal length must be greater than 0')
+
+    if literal_max < literal_min:
+        raise ValueError('max literal length must not be less than min literal length')
 
     if term_depth < 0:
         raise ValueError('depths of terms must not be less than 0')
@@ -164,6 +219,12 @@ def make_regex(
     if max_var_length is not None and max_var_length < 0:
         raise ValueError('max variable length must not be less than 0')
 
+    if len(operators) < 1 or any(map(lambda x: x not in OPERATOR_LIST, operators)):
+        raise ValueError('invalid operators: {!r}'.format(operators))
+
+    if operator_type not in OPERATOR_TYPES:
+        raise ValueError('unknown operator type: {!r}'.format(operator_type))
+
     # set globals
     global _cursor
     global _literal_type
@@ -171,6 +232,8 @@ def make_regex(
     global _current_membership
     global _literal_min
     global _literal_max
+    global _operator_list
+    global _operator_type
 
     _cursor                = 0
     _literal_type          = literal_type
@@ -178,6 +241,13 @@ def make_regex(
     _current_membership    = _configured_membership
     _literal_min           = literal_min
     _literal_max           = literal_max
+    _operator_list         = []
+    _operator_type         = operator_type
+
+    # parse operator list in order, in case user wants a custom alternation order
+    for c in operators:
+        if c not in _operator_list:
+            _operator_list.append(c)
 
     # create variable
     matched = smt_new_var()

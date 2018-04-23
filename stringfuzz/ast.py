@@ -61,6 +61,7 @@ __all__ = [
     'RePlusNode',
     'ReRangeNode',
     'ReUnionNode',
+    'ReInterNode',
     'ReAllCharNode',
 ]
 
@@ -451,3 +452,8 @@ class ReUnionNode(_BinaryExpression):
     _signature = [REGEX_SORT, REGEX_SORT]
     _sort      = REGEX_SORT
     _symbol    = 'ReUnion'
+
+class ReInterNode(_BinaryExpression):
+    _signature = [REGEX_SORT, REGEX_SORT]
+    _sort      = REGEX_SORT
+    _symbol    = 'ReInter'

@@ -83,6 +83,7 @@ def make_re_star(s, w):          return Token('RE_STAR',       w, s.match.start(
 def make_re_plus(s, w):          return Token('RE_PLUS',       w, s.match.start())
 def make_re_range(s, w):         return Token('RE_RANGE',      w, s.match.start())
 def make_re_union(s, w):         return Token('RE_UNION',      w, s.match.start())
+def make_re_inter(s, w):         return Token('RE_INTER',      w, s.match.start())
 
 # constants
 ALPHABET     = string.digits + string.ascii_letters + string.punctuation
@@ -187,6 +188,7 @@ SMT_20_STRING_TOKENS = [
     (r'RegexPlus',      make_re_plus),
     (r'RegexCharRange', make_re_range),
     (r'RegexUnion',     make_re_union),
+    (r'RegexInter',     make_re_inter),
 
     # unique
     (r'Indexof',     make_indexof_2_args),
@@ -220,6 +222,7 @@ SMT_25_STRING_TOKENS = [
     (r're\.\+',        make_re_plus),
     (r're\.range',     make_re_range),
     (r're\.union',     make_re_union),
+    (r're\.inter',     make_re_inter),
     (r're\.allchar',   make_re_allchar),
     (r're\.all',       make_re_allchar),
 

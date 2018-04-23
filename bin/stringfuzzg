@@ -19,7 +19,7 @@ from stringfuzz.generators import lengths
 from stringfuzz.generators import random_text
 from stringfuzz.generators import random_ast
 from stringfuzz.generators import equality
-from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM
+from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM, OPERATOR_STAR, OPERATOR_PLUS, OPERATOR_UNION, OPERATOR_INTER, OPERATOR_CONCAT, OPERATOR_ALTERNATING, OPERATOR_RANDOM
 
 # constants
 CONCATS     = 'concats'
@@ -43,6 +43,8 @@ GENERATORS = {
 DEPTH_TYPES      = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
 LITERAL_TYPES    = [INCREASING_LITERALS, RANDOM_LITERALS]
 MEMBERSHIP_TYPES = [MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM]
+OPERATOR_LIST    = [OPERATOR_STAR, OPERATOR_PLUS, OPERATOR_UNION, OPERATOR_INTER, OPERATOR_CONCAT]
+OPERATOR_TYPES   = [OPERATOR_ALTERNATING, OPERATOR_RANDOM]
 
 # defaults
 DEFAULT_SEED           = 0
@@ -85,6 +87,8 @@ DEFAULT_REGEX_LIT_MAX   = 3
 DEFAULT_TERM_DEPTH      = 0
 DEFAULT_REGEX_VAR_MIN   = None
 DEFAULT_REGEX_VAR_MAX   = None
+DEFAULT_OPERATORS       = OPERATOR_STAR + OPERATOR_PLUS + OPERATOR_UNION
+DEFAULT_OPERATOR_TYPE   = OPERATOR_RANDOM
 
 DEFAULT_NUM_RANDOM_VARS     = 5
 DEFAULT_NUM_RANDOM_ASSERTS  = 10
@@ -427,6 +431,24 @@ def main():
         type    = int,
         default = DEFAULT_REGEX_VAR_MAX,
         help    = 'max length of the variable (default: {})'.format(DEFAULT_REGEX_VAR_MAX)
+    )
+    regex_parser.add_argument(
+        '--operators',
+        '-o',
+        dest    = 'operators',
+        metavar = 'OPS',
+        type    = str,
+        default = DEFAULT_OPERATORS,
+        help    = 'operators to choose from for deep terms. OPS is of the form [{}]+ representing the operators star ({}), plus ({}), union ({}), intersection ({}), concatenation ({}) (default: {})'.format(''.join(OPERATOR_LIST), OPERATOR_STAR, OPERATOR_PLUS, OPERATOR_UNION, OPERATOR_INTER, OPERATOR_CONCAT, DEFAULT_OPERATORS)
+    )
+    regex_parser.add_argument(
+        '--operator-type',
+        '-O',
+        dest    = 'operator_type',
+        type    = str,
+        choices = OPERATOR_TYPES,
+        default = DEFAULT_OPERATOR_TYPE,
+        help    = 'way to choose operator for deep terms (default: {})'.format(DEFAULT_OPERATOR_TYPE)
     )
 
     # random text fuzzer

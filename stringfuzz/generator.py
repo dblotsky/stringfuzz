@@ -246,6 +246,12 @@ def generate_expr(e, language):
         else:
             raise NotSupported(e, language)
 
+    elif isinstance(e, ReInterNode):
+        if language == SMT_25_STRING:
+            components.append('re.inter')
+        else:
+            raise NotSupported(e, language)
+
     # all other expressions
     else:
         components.append(generate_node(e.symbol, language))
