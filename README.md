@@ -12,6 +12,8 @@ There are four main tools:
 Installing
 ==========
 
+Clone this repository, and run this command inside it:
+
     python3 setup.py install
 
 Running
