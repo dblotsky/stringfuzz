@@ -20,6 +20,13 @@ run:
 	stringfuzzx --help
 	stringfuzzg --help
 	stringstats --help
+	stringbreak --help
+
+cvc:
+	stringbreak "cvc4-latest-release --lang smt2 --strings-exp"
+
+z3:
+	stringbreak "z3str3-develop-release smt.string_solver=z3str3 -in"
 
 test:
 	python3 -m unittest tests/*.py

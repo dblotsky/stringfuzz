@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+
+from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
+from stringfuzz.generators import random_ast
+from stringfuzz.generator import generate
+from stringfuzz.parser import parse
+from stringfuzz.smt import smt_string_logic
+
+from stringfuzz.fuzzers.genetic import simulate
+
+DEFAULT_NUM_GENERATIONS = 200
+DEFAULT_LOG_RESOLUTION  = 1
+DEFAULT_WORLD_SIZE      = 10
+
+def main():
+
+    # create arg parser
+    parser = argparse.ArgumentParser(description='Test an SMT string solver in an exploratory fashion.')
+    parser.add_argument(
+        'command',
+        type = str,
+        help = 'command to run the solver (if input fed on standard in)'
+    )
+    parser.add_argument(
+        '--out-language',
+        '-o',
+        dest    = 'out_language',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'solver language (default: {})'.format(SMT_25_STRING)
+    )
+    parser.add_argument(
+        '--in-language',
+        '-i',
+        dest    = 'in_language',
+        type    = str,
+        choices = LANGUAGES,
+        default = SMT_25_STRING,
+        help    = 'seed problem language (default: {})'.format(SMT_25_STRING)
+    )
+    parser.add_argument(
+        '--seed-problem',
+        '-s',
+        dest    = 'seed_problem',
+        metavar = 'F',
+        default = None,
+        type    = argparse.FileType('r'),
+        help    = 'input file (default: stdin)'
+    )
+    parser.add_argument(
+        '--num-generations',
+        '-g',
+        dest    = 'num_generations',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_GENERATIONS,
+        help    = 'number of generations (default: {})'.format(DEFAULT_NUM_GENERATIONS)
+    )
+
+    # parse args
+    args = parser.parse_args()
+
+    # create seed problem, or use an existing one
+    if args.seed_problem is None:
+        seed_problem = [smt_string_logic()] + random_ast(
+            num_vars            = 1,
+            num_asserts         = 5,
+            depth               = 3,
+            max_terms           = 5,
+            max_str_lit_length  = 10,
+            max_int_lit         = 30,
+            literal_probability = 0.5,
+            semantically_valid  = True
+        )
+    else:
+        seed_problem = parse(args.seed_problem.read(), args.in_language)
+
+    # print seed problem
+    print('progenitor:')
+    print('-----')
+    print(generate(seed_problem, args.out_language))
+    print('-----')
+
+    # run the tester
+    print('')
+    print('simulating ...')
+    surviving_problems = simulate(
+        progenitor      = seed_problem,
+        language        = args.out_language,
+        saint_peter     = args.command,
+        num_generations = args.num_generations,
+        world_size      = DEFAULT_WORLD_SIZE,
+        log_resolution  = DEFAULT_LOG_RESOLUTION
+    )
+    print('finished')
+    print('')
+
+    # print out final population
+    for i, problem in enumerate(surviving_problems):
+        print('survivor #{}'.format(i))
+        print('-----')
+        print(generate(problem, args.out_language))
+        print('-----')
+
+if __name__ == '__main__':
+    main()
