@@ -6,9 +6,18 @@ from stringfuzz.ast_walker import ASTWalker
 from stringfuzz.util import split_ast
 
 __all__ = [
+    'DISJOINT_RENAME',
+    'INTERSECTING_RENAME',
+    'NO_RENAME',
     'simple'
 ]
 
+# constants
+DISJOINT_RENAME     = 'disjoint'
+INTERSECTING_RENAME = 'intersecting'
+NO_RENAME           = 'none'
+
+# helpers
 def merge_asts(asts):
 
     # resulting parts
@@ -88,6 +97,7 @@ class RenameIDWalker(ASTWalker):
         elif old_name not in self.taboo:
             new_name = old_name
             self.name_map[old_name] = old_name
+            self.taboo.add(new_name)
 
         # otherwise, figure out new name
         else:
@@ -98,8 +108,8 @@ class RenameIDWalker(ASTWalker):
         # update the name
         identifier.name = new_name
 
-def simple(asts, rename_ids):
-    if rename_ids:
+def simple(asts, rename_type):
+    if rename_type != NO_RENAME:
 
         # keep track of all variable names
         all_names = set()

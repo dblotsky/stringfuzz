@@ -13,7 +13,7 @@ from collections import namedtuple
 
 from stringfuzz.transformers import *
 from stringfuzz.generators import random_ast
-from stringfuzz.mergers import simple
+from stringfuzz.mergers import simple, DISJOINT_RENAME
 from stringfuzz.generator import generate
 from stringfuzz.ast import AssertNode, CheckSatNode, FunctionDeclarationNode
 from stringfuzz.util import coin_toss, split_ast
@@ -40,6 +40,18 @@ TIMEOUT_ANSWER = 'timeout'
 UNKNOWN_ANSWER = 'unknown'
 ERROR_ANSWER   = 'error'
 
+SOLVER_ERROR_FORMAT = '''Solver invocation error:
+    Command: {command}
+    Run time: {time}
+    Answer: {answer}
+v - STDOUT - v
+{stdout}
+v - STDERR - v
+{stderr}
+v - INSTANCE - v
+{instance}
+'''
+
 # globals
 _language        = None
 _timeout         = DEFAULT_TIMEOUT
@@ -47,6 +59,7 @@ _tracing_on      = False
 _wanted_answer   = None
 _min_num_asserts = 1
 _max_num_asserts = 1
+_stop_simulation = False
 
 # data structures
 RunResult = namedtuple('RunResult', ['run_time', 'answer', 'stdout', 'stderr', 'exception'])
@@ -76,16 +89,28 @@ def time_to_trace(generation, resolution):
 def get_only_asserts(organism):
     return [e for e in organism if isinstance(e, AssertNode)]
 
-def interpret_answer(output):
-    output = output.lower().strip()
-    if output == 'unsat':
-        return UNSAT_ANSWER
-    if output == 'sat':
-        return SAT_ANSWER
-    if output == 'unknown':
+def interpret_answer(stdout, stderr):
+
+    # if there is error output, assume error
+    if len(stderr) > 0:
+        return ERROR_ANSWER
+
+    # if both outputs are empty, assume unknown answer
+    if len(stderr) == 0 and len(stdout) == 0:
         return UNKNOWN_ANSWER
-    if output == 'timeout':
+
+    # parse stdout
+    stdout = stdout.lower().strip()
+    if stdout == 'unsat':
+        return UNSAT_ANSWER
+    if stdout == 'sat':
+        return SAT_ANSWER
+    if stdout == 'unknown':
+        return UNKNOWN_ANSWER
+    if stdout == 'timeout':
         return TIMEOUT_ANSWER
+
+    # if parsing failed, assume error
     return ERROR_ANSWER
 
 # ---------------------------------------------------
@@ -141,7 +166,7 @@ def run_solver(command, problem, timeout):
         end     = datetime.datetime.now().timestamp()
         elapsed = end - start
 
-        answer = interpret_answer(stdout)
+        answer = interpret_answer(stdout, stderr)
 
     return RunResult(run_time=elapsed, answer=answer, stdout=stdout, stderr=stderr, exception=None)
 
@@ -151,7 +176,7 @@ def thread_main(index, results, **kwargs):
     try:
         result = run_solver(**kwargs)
     except Exception as e:
-        result = RunResult(run_time=0, answer=ERROR_ANSWER, stdout='', stderr='', exception=e)
+        result = RunResult(run_time=0, answer=None, stdout='', stderr='', exception=e)
 
     # record it
     results[index] = result
@@ -210,7 +235,7 @@ def mutate_add(ast):
     )
 
     # merge both ASTs, with shared variables
-    return simple([ast, new_ast], rename_ids=True)
+    return simple([ast, new_ast], rename_type=DISJOINT_RENAME)
 
 def mutate_remove(ast):
     head, declarations, asserts, tail = split_ast(ast)
@@ -262,7 +287,7 @@ def reproduce(survivors, world_size):
     return new_population
 
 # ---------------------------------------------------
-# judgment
+# simulation
 # ---------------------------------------------------
 
 def judge_one(organism, solver_command):
@@ -286,10 +311,14 @@ def judge_one(organism, solver_command):
             (sample.stderr != '' and sample.answer != TIMEOUT_ANSWER) or
             (sample.answer == ERROR_ANSWER)
         ):
-            error_message = 'Solver returned errors! Answer: ' + sample.answer
-            error_message += '\nv - STDOUT - v\n' + sample.stdout
-            error_message += '\nv - STDERR - v\n' + sample.stderr
-            error_message += '\nv - INSTANCE - v\n' + generate_problem(organism)
+            error_message = SOLVER_ERROR_FORMAT.format(
+                command  = solver_command,
+                answer   = sample.answer,
+                time     = sample.run_time,
+                stdout   = sample.stdout,
+                stderr   = sample.stderr,
+                instance = generate_problem(organism)
+            )
             raise RuntimeError(error_message)
 
         # keep track of answers
@@ -374,14 +403,26 @@ def show_world(g, population, karma):
 
     trace('at generation {}:'.format(g))
     trace('population (from best to worst):')
-    for i, (organism, karma) in enumerate(sorted_population):
+    for i, (organism, its_karma) in enumerate(sorted_population):
         row = '  {i}: {k.answer} {s:.4f} score [{k.run_time:.4f}s, {k.asserts} asserts, {k.lines} lines, {k.bytes} bytes]'.format(
             i = i,
-            k = karma,
-            s = karma.score
+            k = its_karma,
+            s = its_karma.score
         )
         trace(row)
     trace('')
+
+    # if more than half timed out, signal that
+    num_timeouts  = len([k for k in karma if k.answer == TIMEOUT_ANSWER])
+    timeout_ratio = float(num_timeouts) / float(len(karma))
+    if timeout_ratio > 0.5:
+        return True
+    return False
+
+def handle_sigint(signal, frame):
+    print('Received SIGINT', file=sys.stderr)
+    global _stop_simulation
+    _stop_simulation = True
 
 # public API
 def simulate(
@@ -418,8 +459,13 @@ def simulate(
     _max_num_asserts = max_num_asserts
     _min_num_asserts = min_num_asserts
 
+    # set up signal handler
+    signal.signal(signal.SIGINT, handle_sigint)
+
     # create initial population
-    population = [progenitor]
+    population   = [progenitor]
+    strike_count = 0
+    many_timeouts = False
 
     # run simulation
     for g in range(num_generations):
@@ -438,10 +484,25 @@ def simulate(
 
         # print world
         if time_to_trace(g, trace_resolution):
-            show_world(g, population, karma)
+            many_timeouts = show_world(g, population, karma)
 
         # keep only the "best" organisms
         population = cull(population, karma)
+
+        # check for timeout-only runs
+        if many_timeouts:
+            strike_count += 1
+            print('strike', strike_count, file=sys.stderr)
+            if strike_count > 5:
+                print('most dudes keep timing out; stopping simulation', file=sys.stderr)
+                global _stop_simulation
+                _stop_simulation = True
+        else:
+            strike_count = max(0, strike_count-1)
+
+        # break out if needed
+        if _stop_simulation:
+            break
 
     # return final population
     return population

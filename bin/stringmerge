@@ -13,7 +13,7 @@ from stringfuzz.generator import generate
 from stringfuzz.parser import parse, ParsingError
 from stringfuzz.smt import smt_string_logic, smt_check_sat
 from stringfuzz.ast import SettingNode, ExpressionNode, MetaCommandNode, GenericExpressionNode, CheckSatNode, GetModelNode
-from stringfuzz.mergers import simple
+from stringfuzz.mergers import simple, DISJOINT_RENAME, INTERSECTING_RENAME, NO_RENAME
 
 #constants
 SIMPLE = 'simple'
@@ -22,10 +22,16 @@ MERGERS = {
     SIMPLE: simple
 }
 
+RENAMING_STRATEGIES = [
+    DISJOINT_RENAME,
+    INTERSECTING_RENAME,
+    NO_RENAME,
+]
+
 # defaults
-DEFAULT_RENAME_IDS = False
-DEFAULT_SEED       = 0
-DEFAULT_RANDOM     = False
+DEFAULT_RENAMING = NO_RENAME
+DEFAULT_SEED     = 0
+DEFAULT_RANDOM   = False
 
 GET_MODEL     = "get-model"
 GET_INFO      = "get-info"
@@ -103,14 +109,15 @@ def main():
     subparsers = global_parser.add_subparsers(dest='merger', help='merger choice')
     subparsers.required = True
 
-    # simple transformer
-    simple_parser = subparsers.add_parser(SIMPLE, help='simple transformer')
+    # simple merger
+    simple_parser = subparsers.add_parser(SIMPLE, help='simple merger')
     simple_parser.add_argument(
-        '--rename',
-        dest    = 'rename_ids',
-        action  = 'store_true',
-        default = DEFAULT_RENAME_IDS,
-        help    = 'Rename identifiers to avoid conflicts (default: {})'.format(DEFAULT_RENAME_IDS)
+        '--renaming',
+        dest    = 'rename_type',
+        type    = str,
+        choices = RENAMING_STRATEGIES,
+        default = DEFAULT_RENAMING,
+        help    = 'variable renaming strategy (default: {})'.format(DEFAULT_RENAMING)
     )
 
     # parse args

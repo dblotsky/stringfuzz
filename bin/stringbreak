@@ -172,6 +172,9 @@ def main():
         )
 
     # print seed problem
+    trace('-----')
+    trace('solver command:', args.command)
+    trace('-----')
     trace('progenitor:')
     trace('-----')
     trace(generate(seed_problem, args.out_language))
