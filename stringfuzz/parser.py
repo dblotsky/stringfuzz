@@ -208,6 +208,12 @@ def expect_expression(s):
         assertion = expect_arg(s)
         return AssertNode(assertion)
 
+    if s.accept('CHECK_SAT'):
+        return CheckSatNode()
+
+    if s.accept('GET_MODEL'):
+        return GetModelNode()
+
     # declarations and definitions
     if s.accept('DECLARE_FUN'):
         name = expect_identifier(s)

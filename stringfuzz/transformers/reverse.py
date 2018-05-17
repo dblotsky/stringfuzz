@@ -19,7 +19,7 @@ class ReverseTransformer(ASTWalker):
 
     def exit_expression(self, expr, parent):
         if isinstance(expr, (ConcatNode, ReConcatNode)):
-            expr.body = reversed(expr.body)
+            expr.body = list(reversed(expr.body))
 
 # public API
 def reverse(ast):

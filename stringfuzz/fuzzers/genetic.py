@@ -11,53 +11,52 @@ import statistics
 from heapq import heappush, heappop
 from collections import namedtuple
 
-from stringfuzz.transformers import fuzz, graft
+from stringfuzz.transformers import *
 from stringfuzz.generators import random_ast
+from stringfuzz.mergers import simple
 from stringfuzz.generator import generate
-from stringfuzz.ast import AssertNode, CheckSatNode
-from stringfuzz.util import coin_toss
+from stringfuzz.ast import AssertNode, CheckSatNode, FunctionDeclarationNode
+from stringfuzz.util import coin_toss, split_ast
 
 __all__ = [
+    'SAT_ANSWER',
+    'UNSAT_ANSWER',
+    'TIMEOUT_ANSWER',
+    'UNKNOWN_ANSWER',
+    'ERROR_ANSWER',
     'simulate'
 ]
 
 # constants
 DEFAULT_MUTATION_ROUNDS = 4
 DEFAULT_TIMEOUT         = 5
-MAX_NUM_ASSERTS         = 20
+NUM_TO_KEEP             = 4
 
-SAT_ANSWER     = 'sat'
-UNSAT_ANSWER   = 'unsat'
+UNWANTED_PUNISH_FACTOR = 2
+
+SAT_ANSWER     = 'SAT'
+UNSAT_ANSWER   = 'UNSAT'
 TIMEOUT_ANSWER = 'timeout'
 UNKNOWN_ANSWER = 'unknown'
 ERROR_ANSWER   = 'error'
 
 # globals
-_language   = None
-_timeout    = DEFAULT_TIMEOUT
-_tracing_on = False
+_language        = None
+_timeout         = DEFAULT_TIMEOUT
+_tracing_on      = False
+_wanted_answer   = None
+_min_num_asserts = 1
+_max_num_asserts = 1
 
 # data structures
 RunResult = namedtuple('RunResult', ['run_time', 'answer', 'stdout', 'stderr', 'exception'])
+Karma     = namedtuple('Karma', ['run_time', 'score', 'answer', 'lines', 'asserts', 'bytes'])
 
 # helpers
 def trace(*args, **kwargs):
     global _tracing_on
     if _tracing_on is True:
         print(*args, file=sys.stderr, **kwargs)
-
-def decompose(ast):
-    head    = []
-    asserts = []
-    tail    = []
-    for e in ast:
-        if isinstance(e, AssertNode):
-            asserts.append(e)
-        elif isinstance(e, CheckSatNode):
-            tail.append(e)
-        else:
-            head.append(e)
-    return head, asserts, tail
 
 def generate_problem(problem):
     global _language
@@ -73,6 +72,21 @@ def get_num_free_cores():
 
 def time_to_trace(generation, resolution):
     return (generation % resolution) == 0
+
+def get_only_asserts(organism):
+    return [e for e in organism if isinstance(e, AssertNode)]
+
+def interpret_answer(output):
+    output = output.lower().strip()
+    if output == 'unsat':
+        return UNSAT_ANSWER
+    if output == 'sat':
+        return SAT_ANSWER
+    if output == 'unknown':
+        return UNKNOWN_ANSWER
+    if output == 'timeout':
+        return TIMEOUT_ANSWER
+    return ERROR_ANSWER
 
 # ---------------------------------------------------
 # sampling
@@ -107,7 +121,10 @@ def run_solver(command, problem, timeout):
         # trace('TIMED OUT:', repr(command), '... killing', process.pid)
 
         # kill it
-        os.killpg(os.getpgid(process.pid), signal.SIGINT)
+        try:
+            os.killpg(os.getpgid(process.pid), signal.SIGINT)
+        except (PermissionError, ProcessLookupError) as e:
+            print('COULDN\'T KILL SOLVER!', e, file=sys.stderr)
 
         # set timeout result
         elapsed = timeout
@@ -124,7 +141,7 @@ def run_solver(command, problem, timeout):
         end     = datetime.datetime.now().timestamp()
         elapsed = end - start
 
-        answer = stdout
+        answer = interpret_answer(stdout)
 
     return RunResult(run_time=elapsed, answer=answer, stdout=stdout, stderr=stderr, exception=None)
 
@@ -172,17 +189,13 @@ def sample_runs(organism, num_samples, solver_command):
 # reproduction
 # ---------------------------------------------------
 
-def mutate_fuzz(ast):
-    return ast
-    # return fuzz(ast, skip_re_range=False)
+def mutate_reverse(ast):
+    return reverse(ast)
+
+def mutate_translate(ast):
+    return translate(ast, translate_integers=False, skip_re_range=True)
 
 def mutate_add(ast):
-
-    if len(ast) >= MAX_NUM_ASSERTS:
-        return ast
-
-    # decompose existing AST
-    head, asserts, tail = decompose(ast)
 
     # create random AST with one assert
     new_ast = random_ast(
@@ -196,39 +209,43 @@ def mutate_add(ast):
         semantically_valid  = True
     )
 
-    # isolate just the new assert
-    _, new_asserts, _ = decompose(new_ast)
+    # merge both ASTs, with shared variables
+    return simple([ast, new_ast], rename_ids=True)
 
-    # return with the new asserts added
-    return head + asserts + new_asserts + tail
+def mutate_remove(ast):
+    head, declarations, asserts, tail = split_ast(ast)
+    return head + declarations + asserts[:-1] + tail
 
-def mutate_pop(ast):
-    head, asserts, tail = decompose(ast)
-    return head + asserts[:-1] + tail
+def choose_mutator(ast):
 
-def mutate_graft(ast):
-    return ast
-    # return graft(ast, skip_str_to_re=False)
+    # always-available mutators
+    mutators = [mutate_reverse, mutate_translate]
+
+    # adding more asserts
+    num_asserts = len(get_only_asserts(ast))
+    if num_asserts < _max_num_asserts:
+        mutators.append(mutate_add)
+
+    # removing asserts
+    if num_asserts > _min_num_asserts:
+        mutators.append(mutate_remove)
+
+    # pick a mutator
+    mutator = random.choice(mutators)
+
+    return mutator
 
 def mutate(ast):
-    choice = random.randint(1, 4)
-
-    if choice == 1:
-        return mutate_fuzz(ast)
-
-    if choice == 2:
-        return mutate_pop(ast)
-
-    if choice == 3:
-        return mutate_add(ast)
-
-    if choice == 4:
-        return mutate_graft(ast)
+    mutator = choose_mutator(ast)
+    mutated = mutator(ast)
+    return mutated
 
 def vegetative_mate(parent, num_mutation_rounds=DEFAULT_MUTATION_ROUNDS):
     child = parent
+
     for i in range(num_mutation_rounds):
         child = mutate(child)
+
     return child
 
 def mate(parents):
@@ -245,7 +262,7 @@ def reproduce(survivors, world_size):
     return new_population
 
 # ---------------------------------------------------
-# genetic world
+# judgment
 # ---------------------------------------------------
 
 def judge_one(organism, solver_command):
@@ -254,74 +271,152 @@ def judge_one(organism, solver_command):
     num_samples = get_num_free_cores()
     samples     = sample_runs(organism, num_samples, solver_command)
 
-    # get run times and outputs
-    run_times  = (sample.run_time for sample in samples)
-    answers    = (sample.stdout for sample in samples)
-
-    # check for errors
+    # process the samples
+    any_sat_answers     = False
+    any_unsat_answers   = False
+    any_timeout_answers = False
+    any_unknown_answers = False
     for sample in samples:
-        if sample.stderr != '' and sample.answer != TIMEOUT_ANSWER:
-            raise RuntimeError('Solver returned errors:\n{}'.format(error))
+
+        # check for errors
         if sample.exception is not None:
             raise sample.exception
 
+        if (
+            (sample.stderr != '' and sample.answer != TIMEOUT_ANSWER) or
+            (sample.answer == ERROR_ANSWER)
+        ):
+            error_message = 'Solver returned errors! Answer: ' + sample.answer
+            error_message += '\nv - STDOUT - v\n' + sample.stdout
+            error_message += '\nv - STDERR - v\n' + sample.stderr
+            error_message += '\nv - INSTANCE - v\n' + generate_problem(organism)
+            raise RuntimeError(error_message)
+
+        # keep track of answers
+        if sample.answer == SAT_ANSWER:
+            any_sat_answers = True
+        if sample.answer == UNSAT_ANSWER:
+            any_unsat_answers = True
+        if sample.answer == UNKNOWN_ANSWER:
+            any_unknown_answers = True
+        if sample.answer == TIMEOUT_ANSWER:
+            any_timeout_answers = True
+
     # get median run time
+    run_times       = [sample.run_time for sample in samples]
     median_run_time = statistics.median(run_times)
 
-    # process answers
-    first_answer   = next(answers)
-    satisfiability = first_answer
+    # sanity check: should never be both sat and unsat answers
+    if any_sat_answers and any_unsat_answers:
+        raise RuntimeError('Solver returned different answers for the same instance: {}\n'.format(generate_problem(organism)))
 
-    # figure out score
+    # figure out "logical" answer
+    if any_sat_answers:
+        logical_answer = SAT_ANSWER
+    elif any_unsat_answers:
+        logical_answer = UNSAT_ANSWER
+    elif any_unknown_answers:
+        logical_answer = UNKNOWN_ANSWER
+    elif any_timeout_answers:
+        logical_answer = TIMEOUT_ANSWER
+    else:
+        logical_answer = None
+
+    # start the score as the time
     score = median_run_time
 
-    return score
+    # reduce score for an unwanted SAT/UNSAT
+    if (
+        (_wanted_answer is not None) and
+        (logical_answer == SAT_ANSWER or logical_answer == UNSAT_ANSWER)
+    ):
+        if logical_answer != _wanted_answer:
+            score /= UNWANTED_PUNISH_FACTOR
+
+    # compute and return karma
+    karma = Karma(
+        score    = score,
+        run_time = median_run_time,
+        answer   = logical_answer,
+        lines    = len(organism),
+        asserts  = len(get_only_asserts(organism)),
+        bytes    = len(generate_problem(organism))
+    )
+    return karma
 
 def judge_all(population, solver_command):
     return [judge_one(organism, solver_command) for organism in population]
 
-def cull(population, scores):
+def sort_population(population, karma):
 
-    # annotate specimens with their scores
-    global _timeout
-    indices   = range(len(population))
-    annotated = zip([(_timeout - s) for s in scores], indices)
+    # annotate the population with the karma
+    annotated_population = zip(population, karma)
 
-    # create a min-heap out of annotated specimens
-    heap = []
-    for entry in annotated:
-        heappush(heap, entry)
+    # sort by size: lowest bytes first
+    by_bytes = sorted(annotated_population, key=lambda x: x[1].bytes)
+
+    # sort by score: highest score and lowest bytes first
+    by_score_and_bytes = sorted(by_bytes, reverse=True, key=lambda x: x[1].score)
+
+    return by_score_and_bytes
+
+def cull(population, karma):
 
     # get best specimens
-    best_entries = [heappop(heap) for i in range(3)]
-    best_indices = [entry[1] for entry in best_entries]
-    best         = [population[i] for i in best_indices]
+    sorted_population = sort_population(population, karma)
+    best = sorted_population[:NUM_TO_KEEP]
 
-    return best
+    # return survivors
+    return [survivor for survivor, _ in best]
 
-def show_world(g, population, scores):
-    annotated_population = zip(population, scores)
-    sorted_population    = sorted(annotated_population, key=lambda x: x[1])
+def show_world(g, population, karma):
+    sorted_population = sort_population(population, karma)
 
     trace('at generation {}:'.format(g))
-    trace('population:')
-    for i, (organism, score) in enumerate(sorted_population):
-        row = '  {index}: {score} score, {length} statements'.format(
-            index  = i,
-            length = len(organism),
-            score  = score
+    trace('population (from best to worst):')
+    for i, (organism, karma) in enumerate(sorted_population):
+        row = '  {i}: {k.answer} {s:.4f} score [{k.run_time:.4f}s, {k.asserts} asserts, {k.lines} lines, {k.bytes} bytes]'.format(
+            i = i,
+            k = karma,
+            s = karma.score
         )
         trace(row)
     trace('')
 
 # public API
-def simulate(progenitor, language, solver_command, num_generations, world_size, trace_resolution, enable_tracing):
+def simulate(
+    progenitor,
+    language,
+
+    # solver args
+    solver_command,
+    solver_timeout,
+
+    # simulation args
+    num_generations,
+    world_size,
+    wanted_answer,
+    max_num_asserts,
+    min_num_asserts,
+
+    # output args
+    trace_resolution,
+    enable_tracing
+):
 
     # set global config
     global _language
+    global _timeout
     global _tracing_on
-    _language   = language
-    _tracing_on = enable_tracing
+    global _wanted_answer
+    global _max_num_asserts
+    global _min_num_asserts
+    _language        = language
+    _timeout         = solver_timeout
+    _tracing_on      = enable_tracing
+    _wanted_answer   = wanted_answer
+    _max_num_asserts = max_num_asserts
+    _min_num_asserts = min_num_asserts
 
     # create initial population
     population = [progenitor]
@@ -330,7 +425,7 @@ def simulate(progenitor, language, solver_command, num_generations, world_size, 
     for g in range(num_generations):
 
         # log generation progress
-        trace('generation {} running ...'.format(g))
+        print('generation {} running ...'.format(g), file=sys.stderr)
 
         # sanity check: there should be organisms
         assert len(population) > 0
@@ -339,14 +434,14 @@ def simulate(progenitor, language, solver_command, num_generations, world_size, 
         population = reproduce(population, world_size)
 
         # measure performance of each organism
-        scores = judge_all(population, solver_command)
+        karma = judge_all(population, solver_command)
 
         # print world
         if time_to_trace(g, trace_resolution):
-            show_world(g, population, scores)
+            show_world(g, population, karma)
 
         # keep only the "best" organisms
-        population = cull(population, scores)
+        population = cull(population, karma)
 
     # return final population
     return population

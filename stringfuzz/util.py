@@ -2,11 +2,13 @@ import random
 
 from stringfuzz.scanner import ALPHABET
 from stringfuzz.ast import ConcatNode, ReConcatNode
+from stringfuzz.ast import AssertNode, CheckSatNode, FunctionDeclarationNode
 
 __all__ = [
     'coin_toss',
     'random_string',
     'join_terms_with',
+    'split_ast',
     'all_same',
 ]
 
@@ -29,6 +31,22 @@ def join_terms_with(terms, concatenator):
         result = concatenator(term, result)
 
     return result
+
+def split_ast(ast):
+    head           = []
+    declarations   = []
+    asserts        = []
+    tail           = []
+    for e in ast:
+        if isinstance(e, AssertNode):
+            asserts.append(e)
+        elif isinstance(e, CheckSatNode):
+            tail.append(e)
+        elif isinstance(e, FunctionDeclarationNode):
+            declarations.append(e)
+        else:
+            head.append(e)
+    return head, declarations, asserts, tail
 
 # CREDIT:
 #        https://stackoverflow.com/questions/3844801/check-if-all-elements-in-a-list-are-identical

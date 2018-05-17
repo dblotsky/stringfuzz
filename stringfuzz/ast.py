@@ -297,13 +297,22 @@ class AssertNode(_CommandNode, _UnaryExpression):
     _signature = [BOOL_SORT]
     _symbol    = 'assert'
 
+    def __repr__(self):
+        return '(assert {})'.format(with_spaces(self.body))
+
 class CheckSatNode(_CommandNode, _NullaryExpression):
     _signature = UNIT_SIGNATURE
     _symbol    = 'check-sat'
 
+    def __repr__(self):
+        return '(CHECK-SAT)'
+
 class GetModelNode(_CommandNode, _NullaryExpression):
     _signature = UNIT_SIGNATURE
     _symbol    = 'get-model'
+
+    def __repr__(self):
+        return '(GET-MODEL)'
 
 class FunctionDeclarationNode(_CommandNode, _TernaryExpression):
     _signature = UNCHECKED_SIGNATURE
@@ -345,11 +354,9 @@ class LtNode(_RelationExpressionNode):
     _symbol = '<'
 
 class GteNode(_RelationExpressionNode):
-
     _symbol = '>='
 
 class LteNode(_RelationExpressionNode):
-
     _symbol = '<='
 
 # functions

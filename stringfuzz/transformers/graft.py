@@ -117,7 +117,6 @@ class GraftFinder(ASTWalker):
             else:
                 self.rx[0] = expr
 
-
 # public API
 def graft(ast, skip_str_to_re):
     finder = GraftFinder(ast, skip_str_to_re)

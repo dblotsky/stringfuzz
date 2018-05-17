@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import argparse
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
@@ -9,14 +10,25 @@ from stringfuzz.generator import generate
 from stringfuzz.parser import parse
 from stringfuzz.smt import smt_string_logic
 
-from stringfuzz.fuzzers.genetic import simulate
+from stringfuzz.fuzzers.genetic import simulate, SAT_ANSWER, UNSAT_ANSWER
 
 # constants
 DEFAULT_NUM_GENERATIONS = 200
 DEFAULT_WORLD_SIZE      = 10
+DEFAULT_TIMEOUT         = 5
 
+AVAILABLE_WANTED_ANSWERS = [
+    SAT_ANSWER,
+    UNSAT_ANSWER
+]
+
+DEFAULT_MIN_ASSERTS      = 3
+DEFAULT_MAX_ASSERTS      = 10
+DEFAULT_WANTED_ANSWER    = None
 DEFAULT_TRACE_RESOLUTION = 1
 TRACE_BY_DEFAULT         = False
+
+DEFAULT_SEED_PROBLEM = None
 
 # globals
 _tracing_on = False
@@ -59,7 +71,7 @@ def main():
     )
     parser.add_argument(
         '--trace',
-        '-t',
+        '-v',
         dest    = 'trace',
         action  = 'store_true',
         default = TRACE_BY_DEFAULT,
@@ -70,9 +82,9 @@ def main():
         '-s',
         dest    = 'seed_problem',
         metavar = 'F',
-        default = None,
+        default = DEFAULT_SEED_PROBLEM,
         type    = argparse.FileType('r'),
-        help    = 'input file (default: stdin)'
+        help    = 'input file (default: {})'.format(DEFAULT_SEED_PROBLEM)
     )
 
     # simulation arguments
@@ -94,6 +106,41 @@ def main():
         default = DEFAULT_WORLD_SIZE,
         help    = 'number of organisms in the world (default: {})'.format(DEFAULT_WORLD_SIZE)
     )
+    parser.add_argument(
+        '--min-asserts',
+        '-m',
+        dest    = 'min_asserts',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MIN_ASSERTS,
+        help    = 'min number of asserts per instance (except the seed) (default: {})'.format(DEFAULT_MIN_ASSERTS)
+    )
+    parser.add_argument(
+        '--max-asserts',
+        '-M',
+        dest    = 'max_asserts',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_ASSERTS,
+        help    = 'max number of asserts per instance (except the seed) (default: {})'.format(DEFAULT_MAX_ASSERTS)
+    )
+    parser.add_argument(
+        '--timeout',
+        '-t',
+        dest    = 'timeout',
+        type    = float,
+        default = DEFAULT_TIMEOUT,
+        help    = 'timeout, in seconds (default: {})'.format(DEFAULT_TIMEOUT)
+    )
+    parser.add_argument(
+        '--answer',
+        '-a',
+        dest    = 'wanted_answer',
+        type    = str,
+        choices = AVAILABLE_WANTED_ANSWERS,
+        default = DEFAULT_WANTED_ANSWER,
+        help    = 'the answer which to prefer (default: {})'.format(DEFAULT_WANTED_ANSWER)
+    )
 
     # parse args
     args = parser.parse_args()
@@ -108,9 +155,14 @@ def main():
 
     # or create a random one
     else:
+
+        # figure out how many asserts to generate
+        half_max_asserts   = args.max_asserts // 2
+        num_random_asserts = max(1, half_max_asserts)
+
         seed_problem = [smt_string_logic()] + random_ast(
             num_vars            = 1,
-            num_asserts         = 5,
+            num_asserts         = num_random_asserts,
             depth               = 3,
             max_terms           = 5,
             max_str_lit_length  = 10,
@@ -128,24 +180,26 @@ def main():
     # run the tester
     trace('')
     trace('simulating ...')
-    surviving_problems = simulate(
+    surviving_instances = simulate(
         progenitor       = seed_problem,
         language         = args.out_language,
         solver_command   = args.command,
         num_generations  = args.num_generations,
         world_size       = args.world_size,
+        solver_timeout   = args.timeout,
+        wanted_answer    = args.wanted_answer,
+        max_num_asserts  = args.max_asserts,
+        min_num_asserts  = args.min_asserts,
         trace_resolution = DEFAULT_TRACE_RESOLUTION,
         enable_tracing   = _tracing_on
     )
     trace('finished')
     trace('')
 
-    # print out final population
-    for i, problem in enumerate(surviving_problems):
-        print('survivor #{}'.format(i + 1))
-        print('-----')
-        print(generate(problem, args.out_language))
-        print('-----')
+    # print last survivor
+    renegade      = surviving_instances[0]
+    renegade_text = generate(renegade, args.out_language)
+    print(renegade_text)
 
 if __name__ == '__main__':
     main()

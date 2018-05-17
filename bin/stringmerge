@@ -12,7 +12,7 @@ from stringfuzz.constants import LANGUAGES, SMT_25_STRING
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse, ParsingError
 from stringfuzz.smt import smt_string_logic, smt_check_sat
-from stringfuzz.ast import SettingNode, ExpressionNode, MetaCommandNode, GenericExpressionNode
+from stringfuzz.ast import SettingNode, ExpressionNode, MetaCommandNode, GenericExpressionNode, CheckSatNode, GetModelNode
 from stringfuzz.mergers import simple
 
 #constants
@@ -37,6 +37,10 @@ def should_keep(node):
     if isinstance(node, SettingNode):
         return False
     if isinstance(node, MetaCommandNode):
+        return False
+    if isinstance(node, CheckSatNode):
+        return False
+    if isinstance(node, GetModelNode):
         return False
     if isinstance(node, ExpressionNode):
         if node.symbol in EXPR_TO_STRIP:
@@ -148,13 +152,15 @@ def main():
 
     # filter out suppressed expressions
     asts = [list(filter(should_keep, ast)) for ast in asts]
+
     # merge the two ASTs into a new AST
     merged = merger(asts, **merge_args)
+
     # add back the logic and get-sat
     merged = [smt_string_logic()] + merged + [smt_check_sat()]
 
     # transformers produce ASTs
-    print(generate(merged, output_language))    
+    print(generate(merged, output_language))
 
 if __name__ == '__main__':
     main()
