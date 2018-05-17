@@ -2,12 +2,14 @@ import random
 import os
 import sys
 import subprocess
+import multiprocessing
 import threading
 import datetime
 import signal
 import statistics
 
 from heapq import heappush, heappop
+from collections import namedtuple
 
 from stringfuzz.transformers import fuzz, graft
 from stringfuzz.generators import random_ast
@@ -23,16 +25,26 @@ __all__ = [
 DEFAULT_MUTATION_ROUNDS = 4
 DEFAULT_TIMEOUT         = 5
 MAX_NUM_ASSERTS         = 20
-NUM_RUNS                = 8
+
+SAT_ANSWER     = 'sat'
+UNSAT_ANSWER   = 'unsat'
+TIMEOUT_ANSWER = 'timeout'
+UNKNOWN_ANSWER = 'unknown'
+ERROR_ANSWER   = 'error'
 
 # globals
-_language = None
-_timeout  = DEFAULT_TIMEOUT
+_language   = None
+_timeout    = DEFAULT_TIMEOUT
+_tracing_on = False
+
+# data structures
+RunResult = namedtuple('RunResult', ['run_time', 'answer', 'stdout', 'stderr', 'exception'])
 
 # helpers
-def mutate_fuzz(ast):
-    return ast
-    # return fuzz(ast, skip_re_range=False)
+def trace(*args, **kwargs):
+    global _tracing_on
+    if _tracing_on is True:
+        print(*args, file=sys.stderr, **kwargs)
 
 def decompose(ast):
     head    = []
@@ -46,6 +58,123 @@ def decompose(ast):
         else:
             head.append(e)
     return head, asserts, tail
+
+def generate_problem(problem):
+    global _language
+    return generate(problem, _language)
+
+def get_num_free_cores():
+    num_cores = multiprocessing.cpu_count()
+
+    # subtracting one because at least the current core is used
+    num_free_cores = num_cores - 1
+
+    return num_free_cores
+
+def time_to_trace(generation, resolution):
+    return (generation % resolution) == 0
+
+# ---------------------------------------------------
+# sampling
+# ---------------------------------------------------
+
+def run_solver(command, problem, timeout):
+
+    # # print command that will be run
+    # trace('RUNNING:', repr(command))
+
+    # get start time
+    start = datetime.datetime.now().timestamp()
+
+    # run command
+    process = subprocess.Popen(
+        command,
+        shell              = True,
+        stdin              = subprocess.PIPE,
+        stdout             = subprocess.PIPE,
+        stderr             = subprocess.PIPE,
+        preexec_fn         = os.setsid,
+        universal_newlines = True
+    )
+
+    # feed it the problem and wait for it to complete
+    try:
+        stdout, stderr = process.communicate(input=problem, timeout=timeout)
+
+    # if it times out ...
+    except subprocess.TimeoutExpired as e:
+
+        # trace('TIMED OUT:', repr(command), '... killing', process.pid)
+
+        # kill it
+        os.killpg(os.getpgid(process.pid), signal.SIGINT)
+
+        # set timeout result
+        elapsed = timeout
+        answer  = TIMEOUT_ANSWER
+
+        # gather outputs
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+
+    # if it completes in time ...
+    else:
+
+        # measure run time
+        end     = datetime.datetime.now().timestamp()
+        elapsed = end - start
+
+        answer = stdout
+
+    return RunResult(run_time=elapsed, answer=answer, stdout=stdout, stderr=stderr, exception=None)
+
+def thread_main(index, results, **kwargs):
+
+    # get run result
+    try:
+        result = run_solver(**kwargs)
+    except Exception as e:
+        result = RunResult(run_time=0, answer=ERROR_ANSWER, stdout='', stderr='', exception=e)
+
+    # record it
+    results[index] = result
+
+def sample_runs(organism, num_samples, solver_command):
+
+    global _timeout
+
+    # run one thread per sample
+    samples = [None for i in range(num_samples)]
+    threads = []
+    for i in range(num_samples):
+        thread = threading.Thread(
+            target = thread_main,
+            args   = (i, samples),
+            kwargs = {
+                'command': solver_command,
+                'timeout': _timeout,
+                'problem': generate_problem(organism)
+            }
+        )
+        threads.append(thread)
+
+    # run experiments in parallel
+    for thread in threads:
+        thread.start()
+
+    # wait for experiments to finish
+    for thread in threads:
+        thread.join()
+
+    return samples
+
+# ---------------------------------------------------
+# reproduction
+# ---------------------------------------------------
+
+def mutate_fuzz(ast):
+    return ast
+    # return fuzz(ast, skip_re_range=False)
 
 def mutate_add(ast):
 
@@ -105,65 +234,6 @@ def vegetative_mate(parent, num_mutation_rounds=DEFAULT_MUTATION_ROUNDS):
 def mate(parents):
     return vegetative_mate(random.choice(parents))
 
-def time_solver(command, problem, timeout, verbose=False, debug=False):
-
-    # print command that will be run
-    if verbose is True or debug is True:
-        print('RUNNING:', repr(command), file=sys.stderr)
-
-    # get start time
-    start = datetime.datetime.now().timestamp()
-
-    # run command
-    process = subprocess.Popen(
-        command,
-        shell              = True,
-        stdin              = subprocess.PIPE,
-        stdout             = subprocess.PIPE,
-        stderr             = subprocess.PIPE,
-        preexec_fn         = os.setsid,
-        universal_newlines = True
-    )
-
-    # feed it the problem and wait for it to complete
-    try:
-        stdout, stderr = process.communicate(input=problem, timeout=timeout)
-
-    # if it times out ...
-    except subprocess.TimeoutExpired as e:
-
-        # if verbose is True:
-        print('TIMED OUT:', repr(command), '... killing', process.pid, file=sys.stderr)
-
-        # kill it
-        os.killpg(os.getpgid(process.pid), signal.SIGINT)
-
-        # set timeout result
-        elapsed = timeout
-
-        # print output
-        # if verbose is True:
-        print('STDOUT:', process.stdout.read(), file=sys.stderr, end='')
-        print('STDERR:', process.stderr.read(), file=sys.stderr, end='')
-
-    # if it completes in time ...
-    else:
-
-        # measure run time
-        end     = datetime.datetime.now().timestamp()
-        elapsed = end - start
-
-        if stderr != '':
-            print('STDERR IS NOT EMPTY!:', stderr, file=sys.stderr, end='')
-            print('PROBLEM: \n', problem, file=sys.stderr, end='')
-
-        # print output
-        if debug is True:
-            print('STDOUT:', stdout, file=sys.stderr, end='')
-            print('STDERR:', stderr, file=sys.stderr, end='')
-
-    return elapsed
-
 def reproduce(survivors, world_size):
 
     # create offspring
@@ -174,50 +244,41 @@ def reproduce(survivors, world_size):
     new_population = survivors + offspring
     return new_population
 
-def generate_problem(problem):
-    global _language
-    return generate(problem, _language)
+# ---------------------------------------------------
+# genetic world
+# ---------------------------------------------------
 
-def normalise(bottom, top, value):
-    width = top - bottom
-    return value / width
+def judge_one(organism, solver_command):
 
-def time_in_thread(index, times, **kwargs):
-    time         = time_solver(**kwargs)
-    times[index] = time
+    # take run samples
+    num_samples = get_num_free_cores()
+    samples     = sample_runs(organism, num_samples, solver_command)
 
-def get_score(organism, saint_peter):
-    global _timeout
+    # get run times and outputs
+    run_times  = (sample.run_time for sample in samples)
+    answers    = (sample.stdout for sample in samples)
 
-    # get average run time
-    times   = [0 for i in range(NUM_RUNS)]
-    threads = []
-    for i in range(NUM_RUNS):
-        thread = threading.Thread(
-            target = time_in_thread,
-            args   = (i, times),
-            kwargs = {
-                'command': saint_peter,
-                'timeout': _timeout,
-                'problem': generate_problem(organism)
-            }
-        )
-        threads.append(thread)
+    # check for errors
+    for sample in samples:
+        if sample.stderr != '' and sample.answer != TIMEOUT_ANSWER:
+            raise RuntimeError('Solver returned errors:\n{}'.format(error))
+        if sample.exception is not None:
+            raise sample.exception
 
-    # run experiments in parallel
-    for thread in threads:
-        thread.start()
+    # get median run time
+    median_run_time = statistics.median(run_times)
 
-    for thread in threads:
-        thread.join()
+    # process answers
+    first_answer   = next(answers)
+    satisfiability = first_answer
 
-    # return median run time
-    score = statistics.median(times)
+    # figure out score
+    score = median_run_time
+
     return score
 
-def judge(population, saint_peter):
-    for organism in population:
-        yield get_score(organism, saint_peter)
+def judge_all(population, solver_command):
+    return [judge_one(organism, solver_command) for organism in population]
 
 def cull(population, scores):
 
@@ -232,26 +293,35 @@ def cull(population, scores):
         heappush(heap, entry)
 
     # get best specimens
-    print('population', ' '.join(['p[{i}]={s}'.format(s=len(e), i=i) for i, e in enumerate(population)]))
     best_entries = [heappop(heap) for i in range(3)]
-    print('best entries', best_entries)
     best_indices = [entry[1] for entry in best_entries]
-    print('best indices', best_indices)
     best         = [population[i] for i in best_indices]
-    print('best:', ' '.join(['p[{i}]={s} for {t}'.format(t=e[0], s=len(population[e[1]]), i=e[1]) for e in best_entries]))
-    print('')
 
     return best
 
-def time_to_log(generation, resolution):
-    return (generation % resolution) == 0
+def show_world(g, population, scores):
+    annotated_population = zip(population, scores)
+    sorted_population    = sorted(annotated_population, key=lambda x: x[1])
+
+    trace('at generation {}:'.format(g))
+    trace('population:')
+    for i, (organism, score) in enumerate(sorted_population):
+        row = '  {index}: {score} score, {length} statements'.format(
+            index  = i,
+            length = len(organism),
+            score  = score
+        )
+        trace(row)
+    trace('')
 
 # public API
-def simulate(progenitor, language, saint_peter, num_generations, world_size, log_resolution):
+def simulate(progenitor, language, solver_command, num_generations, world_size, trace_resolution, enable_tracing):
 
     # set global config
     global _language
-    _language = language
+    global _tracing_on
+    _language   = language
+    _tracing_on = enable_tracing
 
     # create initial population
     population = [progenitor]
@@ -260,8 +330,7 @@ def simulate(progenitor, language, saint_peter, num_generations, world_size, log
     for g in range(num_generations):
 
         # log generation progress
-        if time_to_log(g, log_resolution):
-            print('generation {}'.format(g))
+        trace('generation {} running ...'.format(g))
 
         # sanity check: there should be organisms
         assert len(population) > 0
@@ -270,7 +339,11 @@ def simulate(progenitor, language, saint_peter, num_generations, world_size, log
         population = reproduce(population, world_size)
 
         # measure performance of each organism
-        scores = judge(population, saint_peter)
+        scores = judge_all(population, solver_command)
+
+        # print world
+        if time_to_trace(g, trace_resolution):
+            show_world(g, population, scores)
 
         # keep only the "best" organisms
         population = cull(population, scores)

@@ -11,10 +11,23 @@ from stringfuzz.smt import smt_string_logic
 
 from stringfuzz.fuzzers.genetic import simulate
 
+# constants
 DEFAULT_NUM_GENERATIONS = 200
-DEFAULT_LOG_RESOLUTION  = 1
 DEFAULT_WORLD_SIZE      = 10
 
+DEFAULT_TRACE_RESOLUTION = 1
+TRACE_BY_DEFAULT         = False
+
+# globals
+_tracing_on = False
+
+# helpers
+def trace(*args, **kwargs):
+    global _tracing_on
+    if _tracing_on is True:
+        print(*args, file=sys.stderr, **kwargs)
+
+# main
 def main():
 
     # create arg parser
@@ -24,6 +37,8 @@ def main():
         type = str,
         help = 'command to run the solver (if input fed on standard in)'
     )
+
+    # I/O arguments
     parser.add_argument(
         '--out-language',
         '-o',
@@ -43,6 +58,14 @@ def main():
         help    = 'seed problem language (default: {})'.format(SMT_25_STRING)
     )
     parser.add_argument(
+        '--trace',
+        '-t',
+        dest    = 'trace',
+        action  = 'store_true',
+        default = TRACE_BY_DEFAULT,
+        help    = 'print status messages (default: {})'.format(TRACE_BY_DEFAULT)
+    )
+    parser.add_argument(
         '--seed-problem',
         '-s',
         dest    = 'seed_problem',
@@ -51,6 +74,8 @@ def main():
         type    = argparse.FileType('r'),
         help    = 'input file (default: stdin)'
     )
+
+    # simulation arguments
     parser.add_argument(
         '--num-generations',
         '-g',
@@ -58,14 +83,31 @@ def main():
         metavar = 'N',
         type    = int,
         default = DEFAULT_NUM_GENERATIONS,
-        help    = 'number of generations (default: {})'.format(DEFAULT_NUM_GENERATIONS)
+        help    = 'number of generations to simulate (default: {})'.format(DEFAULT_NUM_GENERATIONS)
+    )
+    parser.add_argument(
+        '--world-size',
+        '-w',
+        dest    = 'world_size',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_WORLD_SIZE,
+        help    = 'number of organisms in the world (default: {})'.format(DEFAULT_WORLD_SIZE)
     )
 
     # parse args
     args = parser.parse_args()
 
-    # create seed problem, or use an existing one
-    if args.seed_problem is None:
+    # set tracing mode
+    global _tracing_on
+    _tracing_on = args.trace
+
+    # use passed seed problem
+    if args.seed_problem is not None:
+        seed_problem = parse(args.seed_problem.read(), args.in_language)
+
+    # or create a random one
+    else:
         seed_problem = [smt_string_logic()] + random_ast(
             num_vars            = 1,
             num_asserts         = 5,
@@ -76,32 +118,31 @@ def main():
             literal_probability = 0.5,
             semantically_valid  = True
         )
-    else:
-        seed_problem = parse(args.seed_problem.read(), args.in_language)
 
     # print seed problem
-    print('progenitor:')
-    print('-----')
-    print(generate(seed_problem, args.out_language))
-    print('-----')
+    trace('progenitor:')
+    trace('-----')
+    trace(generate(seed_problem, args.out_language))
+    trace('-----')
 
     # run the tester
-    print('')
-    print('simulating ...')
+    trace('')
+    trace('simulating ...')
     surviving_problems = simulate(
-        progenitor      = seed_problem,
-        language        = args.out_language,
-        saint_peter     = args.command,
-        num_generations = args.num_generations,
-        world_size      = DEFAULT_WORLD_SIZE,
-        log_resolution  = DEFAULT_LOG_RESOLUTION
+        progenitor       = seed_problem,
+        language         = args.out_language,
+        solver_command   = args.command,
+        num_generations  = args.num_generations,
+        world_size       = args.world_size,
+        trace_resolution = DEFAULT_TRACE_RESOLUTION,
+        enable_tracing   = _tracing_on
     )
-    print('finished')
-    print('')
+    trace('finished')
+    trace('')
 
     # print out final population
     for i, problem in enumerate(surviving_problems):
-        print('survivor #{}'.format(i))
+        print('survivor #{}'.format(i + 1))
         print('-----')
         print(generate(problem, args.out_language))
         print('-----')
