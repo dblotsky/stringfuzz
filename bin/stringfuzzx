@@ -162,7 +162,7 @@ def main():
     translate_parser = subparsers.add_parser(TRANSLATE, help='translate transformer')
     translate_parser.add_argument(
         '--integers',
-        dest    = 'integer_flag',
+        dest    = 'translate_integers',
         action  = 'store_true',
         default = DEFAULT_INTEGER_FLAG,
         help    = 'Include integers in translation (default: {})'.format(DEFAULT_INTEGER_FLAG)
