@@ -98,6 +98,8 @@ DEFAULT_MAX_RANDOM_STRINGS  = 10
 DEFAULT_MAX_RANDOM_NUMBERS  = 10
 DEFAULT_SEMANTICALLY_VALID  = False
 DEFAULT_LITERAL_PROBABILITY = 0.1
+DEFAULT_WORD_EQUATION       = False
+DEFAULT_EQUATION_WEIGHT     = 30
 
 def main():
 
@@ -535,6 +537,23 @@ def main():
         type    = float,
         default = DEFAULT_LITERAL_PROBABILITY,
         help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
+    )
+    random_ast_parser.add_argument(
+        '--word-equation',
+        '-w',
+        dest    = 'word_equation',
+        action  = 'store_true',
+        default = DEFAULT_WORD_EQUATION,
+        help    = 'generate word equations only (default: {})'.format(DEFAULT_WORD_EQUATION)
+    )
+    random_ast_parser.add_argument(
+        '--equation-weight',
+        '-e',
+        dest    = 'equation_weight',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_EQUATION_WEIGHT,
+        help    = 'equation likelihood factor (default: {})'.format(DEFAULT_EQUATION_WEIGHT)
     )
 
     # parse args
