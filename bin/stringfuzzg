@@ -19,6 +19,7 @@ from stringfuzz.generators import lengths
 from stringfuzz.generators import random_text
 from stringfuzz.generators import random_ast
 from stringfuzz.generators import equality
+from stringfuzz.generators import clever
 from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM, OPERATOR_STAR, OPERATOR_PLUS, OPERATOR_UNION, OPERATOR_INTER, OPERATOR_CONCAT, OPERATOR_ALTERNATING, OPERATOR_RANDOM
 
 # constants
@@ -29,6 +30,7 @@ RANDOM_TEXT = 'random-text'
 RANDOM_AST  = 'random-ast'
 REGEX       = 'regex'
 EQUALITY    = 'equality'
+CLEVER      = 'clever'
 
 GENERATORS = {
     CONCATS:     concats,
@@ -38,6 +40,7 @@ GENERATORS = {
     RANDOM_AST:  random_ast,
     REGEX:       regex,
     EQUALITY:    equality,
+    CLEVER:      clever,
 }
 
 DEPTH_TYPES      = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
@@ -100,6 +103,13 @@ DEFAULT_SEMANTICALLY_VALID  = False
 DEFAULT_LITERAL_PROBABILITY = 0.1
 DEFAULT_WORD_EQUATION       = False
 DEFAULT_EQUATION_WEIGHT     = 30
+
+DEFAULT_MAX_CLIENT_DEPTH = 10
+DEFAULT_NUM_CLIENT_VARS  = 2
+DEFAULT_MAX_LIB_DEPTH    = 5
+DEFAULT_NUM_LIB_VARS     = 1
+DEFAULT_CLEVER_DEPTH     = 3
+DEFAULT_NUM_LIB_CALLS    = 1
 
 def main():
 
@@ -556,6 +566,58 @@ def main():
         help    = 'equation likelihood factor (default: {})'.format(DEFAULT_EQUATION_WEIGHT)
     )
 
+    # similar_eq fuzzer
+    clever_parser = subparsers.add_parser(CLEVER, help='random client-specific equivalence checking problem')
+    clever_parser.add_argument(
+        '--num-client-vars',
+        dest    = 'num_client_vars',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_CLIENT_VARS,
+        help    = 'number of variables in the client (default: {})'.format(DEFAULT_NUM_CLIENT_VARS)
+    )
+    clever_parser.add_argument(
+        '--num-lib-vars',
+        dest    = 'num_lib_vars',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_LIB_VARS,
+        help    = 'number of variables in the library (default: {})'.format(DEFAULT_NUM_LIB_VARS)
+    )
+    clever_parser.add_argument(
+        '--client-depth',
+        dest    = 'max_client_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_CLIENT_DEPTH,
+        help    = 'maximum depth of the client (default: {})'.format(DEFAULT_MAX_CLIENT_DEPTH)
+    )
+    clever_parser.add_argument(
+        '--lib-depth',
+        dest    = 'max_lib_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_LIB_DEPTH,
+        help    = 'maximum depth of the library (default: {})'.format(DEFAULT_MAX_LIB_DEPTH)
+    )
+    clever_parser.add_argument(
+        '--clever-depth',
+        dest    = 'clever_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_CLEVER_DEPTH,
+        help    = 'Depth at which library is called (default: {})'.format(DEFAULT_CLEVER_DEPTH)
+    )
+
+    clever_parser.add_argument(
+        '--num-lib-calls',
+        dest    = 'num_lib_calls',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_LIB_CALLS,
+        help    = 'Number of times the library is called (default: {})'.format(DEFAULT_NUM_LIB_CALLS)
+    )
+
     # parse args
     args = global_parser.parse_args()
 
@@ -591,7 +653,7 @@ def main():
     generated = generator(**generator_args)
 
     # prepend the logic setting
-    generated = [smt_string_logic()] + generated
+    # generated = [smt_string_logic()] + generated
 
     # the random text generator produces raw text
     if (generator == random_text):

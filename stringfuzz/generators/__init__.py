@@ -5,3 +5,4 @@ from stringfuzz.generators.random_ast import *
 from stringfuzz.generators.random_text import *
 from stringfuzz.generators.regex import *
 from stringfuzz.generators.equality import *
+from stringfuzz.generators.clever import *

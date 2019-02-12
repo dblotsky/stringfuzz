@@ -8,6 +8,7 @@ __all__ = [
     'smt_var',
     'smt_const',
     'smt_new_var',
+    'smt_new_arg',
     'smt_new_const',
     'smt_str_lit',
     'smt_int_lit',
@@ -22,7 +23,9 @@ __all__ = [
     'smt_at',
     'smt_len',
     'smt_declare_var',
+    'smt_declare_args',
     'smt_declare_const',
+    'smt_define_func',
     'smt_check_sat',
     'smt_get_model',
     'smt_reset_counters',
@@ -45,17 +48,28 @@ __all__ = [
 # constants
 VAR_PREFIX   = 'var'
 CONST_PREFIX = 'const'
+ARG_PREFIX   = 'arg'
 
 # globals
 var_counter   = 0
 const_counter = 0
+arg_counter   = 0
 
 # helper functions
 def smt_var(suffix):
     return IdentifierNode('{}{}'.format(VAR_PREFIX, suffix))
 
+def smt_arg(suffix):
+    return IdentifierNode('{}{}'.format(ARG_PREFIX, suffix))
+
 def smt_const(suffix):
     return IdentifierNode('{}{}'.format(CONST_PREFIX, suffix))
+
+def smt_new_arg():
+    global arg_counter
+    returned = arg_counter
+    arg_counter += 1
+    return smt_arg(returned)
 
 def smt_new_var():
     global var_counter
@@ -110,6 +124,9 @@ def smt_gte(a, b):
 def smt_lte(a, b):
     return LteNode(a, b)
 
+def smt_ite(a, b, c):
+    return IfThenElseNode(a, b, c)
+
 def smt_concat(a, b):
     return ConcatNode(a, b)
 
@@ -150,8 +167,14 @@ def smt_assert(exp):
 def smt_declare_var(identifier, sort='String'):
     return FunctionDeclarationNode(identifier, BracketsNode([]), AtomicSortNode(sort))
 
+def smt_declare_args(vars_sorts, sort='String'):
+    return ArgDeclarationNode([BracketsNode([v,s]) for v,s in vars_sorts])
+
 def smt_declare_const(identifier, sort='String'):
     return ConstantDeclarationNode(identifier, AtomicSortNode(sort))
+
+def smt_define_func(identifier, signature, sort, body):
+    return FunctionDefinitionNode(identifier, signature, AtomicSortNode(sort), body)
 
 def smt_check_sat():
     return CheckSatNode()
