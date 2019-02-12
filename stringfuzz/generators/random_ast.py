@@ -159,6 +159,7 @@ def make_random_ast(num_vars, num_asserts, depth, max_terms, max_str_lit_length,
         global ALMOST_TERMINALS
         global N_ARY_NONTERMINALS
         global EXPRESSION_SORTS
+        global DECLARABLE_SORTS
 
         TERMINALS = []
 
