@@ -191,11 +191,11 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     client_args = [random.choice(DECLARABLE_SORTS) for s in range(num_client_vars)]
 
     # create variables
-    variables = {s: [] for s in set(client_args)}
+    variables = []
     decls = []
     for s in client_args:
         v = smt_new_var()
-        variables[s].append(v)
+        variables.append(v)
         decls.append(smt_declare_var(v, sort=s))
 
     client_vars = {s: [] for s in set(client_args)}
@@ -226,7 +226,7 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     client_body = make_random_tree(client_vars, client_sort, max_client_depth, max_expr_depth)
     inserter = LibInserter([client_body], lib_sort)
     old_client_body = inserter.walk()[0]
-    random_args = [make_random_expression(variables, arg_sort, max_expr_depth) for arg_sort in lib_args]
+    random_args = [make_random_expression(client_vars, arg_sort, max_expr_depth) for arg_sort in lib_args]
     lib_call_depth = inserter.insert_lib_calls(old_lib_name, lib_args, random_args, num_lib_calls)
     new_client_body = LibRenamer([copy.deepcopy(old_client_body)], old_lib_name, new_lib_name).walk()[0]
 
