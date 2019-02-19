@@ -108,8 +108,8 @@ DEFAULT_MAX_CLIENT_DEPTH = 10
 DEFAULT_NUM_CLIENT_VARS  = 2
 DEFAULT_MAX_LIB_DEPTH    = 5
 DEFAULT_NUM_LIB_VARS     = 1
-DEFAULT_CLEVER_DEPTH     = 3
 DEFAULT_NUM_LIB_CALLS    = 1
+DEFAULT_MAX_EXPR_DEPTH   = 3
 
 def main():
 
@@ -601,21 +601,47 @@ def main():
         help    = 'maximum depth of the library (default: {})'.format(DEFAULT_MAX_LIB_DEPTH)
     )
     clever_parser.add_argument(
-        '--clever-depth',
-        dest    = 'clever_depth',
-        metavar = 'N',
-        type    = int,
-        default = DEFAULT_CLEVER_DEPTH,
-        help    = 'Depth at which library is called (default: {})'.format(DEFAULT_CLEVER_DEPTH)
-    )
-
-    clever_parser.add_argument(
         '--num-lib-calls',
         dest    = 'num_lib_calls',
         metavar = 'N',
         type    = int,
         default = DEFAULT_NUM_LIB_CALLS,
-        help    = 'Number of times the library is called (default: {})'.format(DEFAULT_NUM_LIB_CALLS)
+        help    = 'number of times the library is called (default: {})'.format(DEFAULT_NUM_LIB_CALLS)
+    )
+    clever_parser.add_argument(
+        '--expr-depth',
+        dest    = 'max_expr_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_EXPR_DEPTH,
+        help    = 'maximum depth of a leaf (non-ite) expression (default: {})'.format(DEFAULT_MAX_EXPR_DEPTH)
+    )
+    clever_parser.add_argument(
+        '--max-string',
+        '-l',
+        dest    = 'max_str_lit_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_STRINGS,
+        help    = 'maximum length of string literals (default: {})'.format(DEFAULT_MAX_RANDOM_STRINGS)
+    )
+    clever_parser.add_argument(
+        '--max-int',
+        '-x',
+        dest    = 'max_int_lit',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_NUMBERS,
+        help    = 'maximum size of int literals (default: {})'.format(DEFAULT_MAX_RANDOM_NUMBERS)
+    )
+    clever_parser.add_argument(
+        '--literal-chance',
+        '-p',
+        dest    = 'literal_probability',
+        metavar = 'P',
+        type    = float,
+        default = DEFAULT_LITERAL_PROBABILITY,
+        help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
     )
 
     # parse args
