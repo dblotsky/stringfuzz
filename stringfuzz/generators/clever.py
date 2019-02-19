@@ -37,9 +37,40 @@ _max_int_lit         = 0
 _literal_probability = 0.0
 
 class LibInserter(ASTWalker):
-    def __init__(self, ast, lib_name, lib_sort, lib_args):
+    def __init__(self, ast, sort):
         super().__init__(ast)
-        self.lib_call_depth = 0
+        self.sort           = sort
+        self.candidates     = {}
+
+    def walk_expression(self, expression, parent, depth=0, pos_in_parent=-1):
+        if expression.returns(self.sort) and pos_in_parent > -1:
+            if not depth in self.candidates:
+                self.candidates[depth] = []
+            self.candidates[depth].append((parent, pos_in_parent))
+
+        for i in sorted(range(len(expression.body)), key=lambda k: random.random()):
+            sub_expression = expression.body[i]
+            if isinstance(sub_expression, ExpressionNode):
+                self.walk_expression(sub_expression, expression, depth+1, i)
+    
+    def insert_lib_calls(self, name, sig, variables, num_lib_calls):
+        min_depth = -1
+        for _ in range(num_lib_calls):
+            depth = random.choice(list(self.candidates.keys()))
+            c = random.choice(list(range(len(self.candidates[depth]))))
+            parent, pos = self.candidates[depth][c]
+            del self.candidates[depth][c]
+
+            if self.candidates[depth] == []:
+                del self.candidates[depth]
+
+            if depth < min_depth or min_depth == -1:
+                min_depth = depth
+
+            parent.body[pos] = call_func(name, sig, variables)
+        
+        return min_depth
+
 
 class LibRenamer(ASTWalker):
     def __init__(self, ast, old_name, new_name):
@@ -193,9 +224,10 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     decls.append(smt_define_func(new_lib_name, lib_decls, lib_sort, new_lib_body))
 
     client_body = make_random_tree(client_vars, client_sort, max_client_depth, max_expr_depth)
-    inserter = LibInserter([client_body], old_lib_name, lib_args, lib_sort)
+    inserter = LibInserter([client_body], lib_sort)
     old_client_body = inserter.walk()[0]
-    lib_call_depth = inserter.lib_call_depth
+    random_args = [make_random_expression(variables, arg_sort, max_expr_depth) for arg_sort in lib_args]
+    lib_call_depth = inserter.insert_lib_calls(old_lib_name, lib_args, random_args, num_lib_calls)
     new_client_body = LibRenamer([copy.deepcopy(old_client_body)], old_lib_name, new_lib_name).walk()[0]
 
     decls.append(smt_define_func(client_name+"_old", client_decls, client_sort, old_client_body))
@@ -208,7 +240,7 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     print("; num_lib_vars", num_lib_vars)
     print("; num_lib_calls", num_lib_calls)
     print("; max_expr_depth", max_expr_depth)
-    print("; lib_call_depth", lib_call_depth)
+    print("; lowest_lib_call_depth", lib_call_depth)
     print(";END STRINGFUZZ STATS")
 
     # assert that the client calling the old library is not equal to the client calling the new library
