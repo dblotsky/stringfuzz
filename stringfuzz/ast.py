@@ -45,6 +45,8 @@ __all__ = [
     'LteNode',
     'IfThenElseNode',
     'ConcatNode',
+    'PlusNode',
+    'MulNode',
     'ContainsNode',
     'AtNode',
     'LengthNode',
@@ -368,6 +370,16 @@ class ConcatNode(_BinaryExpression):
     _signature = [STRING_SORT, STRING_SORT]
     _sort      = STRING_SORT
     _symbol    = 'Concat'
+
+class PlusNode(_BinaryExpression):
+    _signature = [INT_SORT, INT_SORT]
+    _sort      = INT_SORT
+    _symbol    = '+'
+
+class MulNode(_BinaryExpression):
+    _signature = [INT_SORT, INT_SORT]
+    _sort      = INT_SORT
+    _symbol    = '*'
 
 class ContainsNode(_BinaryExpression):
     _signature = [STRING_SORT, STRING_SORT]

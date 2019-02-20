@@ -19,7 +19,7 @@ from stringfuzz.generators import lengths
 from stringfuzz.generators import random_text
 from stringfuzz.generators import random_ast
 from stringfuzz.generators import equality
-from stringfuzz.generators import clever
+from stringfuzz.generators import clever, STRING, INT, BOOL, VARIABLE_SORTS
 from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM, OPERATOR_STAR, OPERATOR_PLUS, OPERATOR_UNION, OPERATOR_INTER, OPERATOR_CONCAT, OPERATOR_ALTERNATING, OPERATOR_RANDOM
 
 # constants
@@ -110,6 +110,7 @@ DEFAULT_MAX_LIB_DEPTH    = 5
 DEFAULT_NUM_LIB_VARS     = 2
 DEFAULT_NUM_LIB_CALLS    = 1
 DEFAULT_MAX_EXPR_DEPTH   = 3
+DEFAULT_SORTS            = [INT]
 
 def main():
 
@@ -642,6 +643,15 @@ def main():
         type    = float,
         default = DEFAULT_LITERAL_PROBABILITY,
         help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
+    )
+    clever_parser.add_argument(
+        '--sorts',
+        '-s',
+        dest    = 'sorts',
+        metavar = 'SORTS',
+        type    = str,
+        default = DEFAULT_SORTS,
+        help    = 'sorts to choose from. SORTS is of the form [{}]+ representing String ({}), Int ({}), and Bool ({}) (default: {})'.format(''.join(VARIABLE_SORTS), STRING, INT, BOOL, DEFAULT_SORTS)
     )
 
     # parse args

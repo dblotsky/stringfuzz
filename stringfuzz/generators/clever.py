@@ -8,28 +8,48 @@ from stringfuzz.ast_walker import ASTWalker
 
 __all__ = [
     'clever',
+    "STRING",
+    "INT",
+    "BOOL",
+    "VARIABLE_SORTS"
 ]
 
-TREE_NONTERMINAL  = IfThenElseNode
-EXPR_NONTERMINALS = [
-    NotNode,
-    GtNode,
-    LtNode,
-    GteNode,
-    LteNode,
-    ContainsNode,
-    AtNode,
-    LengthNode,
-    IndexOf2Node,
-    PrefixOfNode,
-    SuffixOfNode,
-    StringReplaceNode,
-    SubstringNode, 
-    ConcatNode,
-    AndNode,
-    OrNode,
-    EqualNode
-]
+STRING         = 's'
+INT            = 'i'
+BOOL           = 'b'
+VARIABLE_SORTS = [STRING, INT, BOOL]
+
+_operators = {
+    STRING : [
+        ContainsNode,
+        AtNode,
+        LengthNode,
+        IndexOf2Node,
+        PrefixOfNode,
+        SuffixOfNode,
+        StringReplaceNode,
+        SubstringNode, 
+        ConcatNode,
+    ],
+    INT : [
+        GtNode,
+        LtNode,
+        GteNode,
+        LteNode,
+        PlusNode,
+        MulNode,
+    ],
+    BOOL : [
+        NotNode,
+        AndNode,
+        OrNode,
+        EqualNode
+    ]
+}
+
+_tree_nonterminal  = IfThenElseNode
+_expr_nontermianls = _operators[BOOL]
+_var_sorts         = [] 
 
 # global config
 _max_str_lit_length  = 0
@@ -126,14 +146,14 @@ def make_random_expression(variables, sort, depth):
     shrunken_depth = random.randint(0, depth - 1)
 
     # get random expression generator
-    candidate_nodes = get_all_returning_a(sort, EXPR_NONTERMINALS)
+    candidate_nodes = get_all_returning_a(sort, _expr_nontermianls)
     expression_node = random.choice(candidate_nodes)
     signature       = expression_node.get_signature()
     num_args        = len(signature)
 
     # if the expression takes any sort, pick one
     if expression_node.accepts(ANY_SORT):
-        collapsed_sort = random.choice(DECLARABLE_SORTS)
+        collapsed_sort = random.choice(_var_sorts)
         signature      = [collapsed_sort for i in range(num_args)]
 
     # generate random arguments
@@ -156,11 +176,11 @@ def make_random_tree(variables, sort, tree_depth, expr_depth):
     signature   = [sort, sort]
     random_args = [make_random_tree(variables, arg_sort, shrunken_depth, expr_depth) for arg_sort in signature]
     random_args = [make_random_expression(variables, BOOL_SORT, expr_depth)] + random_args
-    expression  = TREE_NONTERMINAL(*random_args)
+    expression  = _tree_nonterminal(*random_args)
 
     return expression
 
-def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, num_lib_calls, max_expr_depth, max_str_lit_length, max_int_lit, literal_probability, client_name="client", old_lib_name="old_lib", new_lib_name="new_lib"):
+def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, num_lib_calls, max_expr_depth, max_str_lit_length, max_int_lit, literal_probability, sorts, client_name="client", old_lib_name="old_lib", new_lib_name="new_lib"):
 
     # check args
     if max_client_depth < 1:
@@ -175,20 +195,36 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     if max_lib_depth < 1:
         raise ValueError('the maximum library depth must be at least 1')
 
+    if len(sorts) < 1 or any(map(lambda x: x not in VARIABLE_SORTS, sorts)):
+        raise ValueError('invalid sorts: {!r}'.format(sorts))
+
     global _max_str_lit_length
     global _max_int_lit
     global _literal_probability
+    global _var_sorts
+    global _expr_nontermianls
 
     # set global config
     _max_str_lit_length  = max_str_lit_length
     _max_int_lit         = max_int_lit
     _literal_probability = literal_probability
 
+    _var_sorts = []
+    for s in sorts:
+        if s == STRING:
+            _expr_nontermianls.extend(_operators[STRING])
+            _var_sorts.append(STRING_SORT)
+        if s == INT:
+            _expr_nontermianls.extend(_operators[INT])
+            _var_sorts.append(INT_SORT)
+        if s == BOOL:
+            _var_sorts.append(BOOL_SORT)
+
     # create function definitions
-    lib_sort    = random.choice(DECLARABLE_SORTS)
-    lib_args    = [random.choice(DECLARABLE_SORTS) for s in range(num_lib_vars)]
-    client_sort = random.choice(DECLARABLE_SORTS)
-    client_args = [random.choice(DECLARABLE_SORTS) for s in range(num_client_vars)]
+    lib_sort    = random.choice(_var_sorts)
+    lib_args    = [random.choice(_var_sorts) for s in range(num_lib_vars)]
+    client_sort = random.choice(_var_sorts)
+    client_args = [random.choice(_var_sorts) for s in range(num_client_vars)]
 
     # create variables
     variables = []
