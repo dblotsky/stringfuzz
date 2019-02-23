@@ -19,6 +19,7 @@ from stringfuzz.generators import lengths
 from stringfuzz.generators import random_text
 from stringfuzz.generators import random_ast
 from stringfuzz.generators import equality
+from stringfuzz.generators import clever, STRING, INT, BOOL, VARIABLE_SORTS
 from stringfuzz.generators import regex, INCREASING_LITERALS, RANDOM_LITERALS, MEMBER_IN, MEMBER_NOT_IN, MEMBER_ALTERNATING, MEMBER_RANDOM, OPERATOR_STAR, OPERATOR_PLUS, OPERATOR_UNION, OPERATOR_INTER, OPERATOR_CONCAT, OPERATOR_ALTERNATING, OPERATOR_RANDOM
 
 # constants
@@ -29,6 +30,7 @@ RANDOM_TEXT = 'random-text'
 RANDOM_AST  = 'random-ast'
 REGEX       = 'regex'
 EQUALITY    = 'equality'
+CLEVER      = 'clever'
 
 GENERATORS = {
     CONCATS:     concats,
@@ -38,6 +40,7 @@ GENERATORS = {
     RANDOM_AST:  random_ast,
     REGEX:       regex,
     EQUALITY:    equality,
+    CLEVER:      clever,
 }
 
 DEPTH_TYPES      = [SYNTACTIC_DEPTH, SEMANTIC_DEPTH]
@@ -98,6 +101,17 @@ DEFAULT_MAX_RANDOM_STRINGS  = 10
 DEFAULT_MAX_RANDOM_NUMBERS  = 10
 DEFAULT_SEMANTICALLY_VALID  = False
 DEFAULT_LITERAL_PROBABILITY = 0.1
+DEFAULT_WORD_EQUATION       = False
+DEFAULT_EQUATION_WEIGHT     = 30
+
+DEFAULT_MAX_CLIENT_DEPTH = 10
+DEFAULT_NUM_CLIENT_VARS  = 3
+DEFAULT_MAX_LIB_DEPTH    = 5
+DEFAULT_NUM_LIB_VARS     = 2
+DEFAULT_NUM_LIB_CALLS    = 1
+DEFAULT_MAX_EXPR_DEPTH   = 3
+DEFAULT_SORTS            = [INT]
+DEFAULT_SLICED           = False
 
 def main():
 
@@ -536,6 +550,118 @@ def main():
         default = DEFAULT_LITERAL_PROBABILITY,
         help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
     )
+    random_ast_parser.add_argument(
+        '--word-equation',
+        '-w',
+        dest    = 'word_equation',
+        action  = 'store_true',
+        default = DEFAULT_WORD_EQUATION,
+        help    = 'generate word equations only (default: {})'.format(DEFAULT_WORD_EQUATION)
+    )
+    random_ast_parser.add_argument(
+        '--equation-weight',
+        '-e',
+        dest    = 'equation_weight',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_EQUATION_WEIGHT,
+        help    = 'equation likelihood factor (default: {})'.format(DEFAULT_EQUATION_WEIGHT)
+    )
+
+    # similar_eq fuzzer
+    clever_parser = subparsers.add_parser(CLEVER, help='random client-specific equivalence checking problem')
+    clever_parser.add_argument(
+        '--num-client-vars',
+        dest    = 'num_client_vars',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_CLIENT_VARS,
+        help    = 'number of variables in the client (default: {})'.format(DEFAULT_NUM_CLIENT_VARS)
+    )
+    clever_parser.add_argument(
+        '--num-lib-vars',
+        dest    = 'num_lib_vars',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_LIB_VARS,
+        help    = 'number of variables in the library (default: {})'.format(DEFAULT_NUM_LIB_VARS)
+    )
+    clever_parser.add_argument(
+        '--client-depth',
+        dest    = 'max_client_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_CLIENT_DEPTH,
+        help    = 'maximum depth of the client (default: {})'.format(DEFAULT_MAX_CLIENT_DEPTH)
+    )
+    clever_parser.add_argument(
+        '--lib-depth',
+        dest    = 'max_lib_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_LIB_DEPTH,
+        help    = 'maximum depth of the library (default: {})'.format(DEFAULT_MAX_LIB_DEPTH)
+    )
+    clever_parser.add_argument(
+        '--num-lib-calls',
+        dest    = 'num_lib_calls',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_NUM_LIB_CALLS,
+        help    = 'number of times the library is called (default: {})'.format(DEFAULT_NUM_LIB_CALLS)
+    )
+    clever_parser.add_argument(
+        '--expr-depth',
+        dest    = 'max_expr_depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_EXPR_DEPTH,
+        help    = 'maximum depth of a leaf (non-ite) expression (default: {})'.format(DEFAULT_MAX_EXPR_DEPTH)
+    )
+    clever_parser.add_argument(
+        '--max-string',
+        '-l',
+        dest    = 'max_str_lit_length',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_STRINGS,
+        help    = 'maximum length of string literals (default: {})'.format(DEFAULT_MAX_RANDOM_STRINGS)
+    )
+    clever_parser.add_argument(
+        '--max-int',
+        '-x',
+        dest    = 'max_int_lit',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_MAX_RANDOM_NUMBERS,
+        help    = 'maximum size of int literals (default: {})'.format(DEFAULT_MAX_RANDOM_NUMBERS)
+    )
+    clever_parser.add_argument(
+        '--literal-chance',
+        '-p',
+        dest    = 'literal_probability',
+        metavar = 'P',
+        type    = float,
+        default = DEFAULT_LITERAL_PROBABILITY,
+        help    = 'probability of creating literals instead of variables (default: {})'.format(DEFAULT_LITERAL_PROBABILITY)
+    )
+    clever_parser.add_argument(
+        '--sorts',
+        '-s',
+        dest    = 'sorts',
+        metavar = 'SORTS',
+        type    = str,
+        default = DEFAULT_SORTS,
+        help    = 'sorts to choose from. SORTS is of the form [{}]+ representing String ({}), Int ({}), and Bool ({}) (default: {})'.format(''.join(VARIABLE_SORTS), STRING, INT, BOOL, DEFAULT_SORTS)
+    )
+    clever_parser.add_argument(
+        '--slice',
+        dest    = 'sliced',
+        action  = 'store_true',
+        default = DEFAULT_SLICED,
+        help    = 'slice the equivalence query (default: {})'.format(DEFAULT_SLICED)
+    )
+
 
     # parse args
     args = global_parser.parse_args()
@@ -572,7 +698,7 @@ def main():
     generated = generator(**generator_args)
 
     # prepend the logic setting
-    generated = [smt_string_logic()] + generated
+    # generated = [smt_string_logic()] + generated
 
     # the random text generator produces raw text
     if (generator == random_text):

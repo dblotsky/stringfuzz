@@ -88,11 +88,14 @@ def should_choose_literal():
 
 def make_random_terminal(variables, sort):
 
+    if _word_equation and sort in [BOOL_SORT, INT_SORT] and not should_choose_literal():
+        return make_random_expression(variables, sort, 1)
+
     if sort == REGEX_SORT:
         return ReAllCharNode()
 
     # randomly choose between a variable or a literal
-    if should_choose_literal():
+    if should_choose_literal() or sort not in variables:
         return make_random_literal(sort)
 
     return random.choice(variables[sort])
@@ -112,7 +115,7 @@ def make_random_expression(variables, sort, depth):
     shrunken_depth = random.randint(0, depth - 1)
 
     # get random expression generator
-    candidate_nodes = get_all_returning_a(sort, NONTERMINALS)
+    candidate_nodes = get_all_returning_a(sort, NONTERMINALS+N_ARY_NONTERMINALS)
     expression_node = random.choice(candidate_nodes)
     signature       = expression_node.get_signature()
     num_args        = len(signature)
@@ -134,12 +137,13 @@ def generate_assert(variables, depth):
     expression = make_random_expression(variables, BOOL_SORT, depth)
     return AssertNode(expression)
 
-def make_random_ast(num_vars, num_asserts, depth, max_terms, max_str_lit_length, max_int_lit, literal_probability, semantically_valid):
+def make_random_ast(num_vars, num_asserts, depth, max_terms, max_str_lit_length, max_int_lit, literal_probability, semantically_valid, word_equation, equation_weight):
     global _max_terms
     global _max_str_lit_length
     global _max_int_lit
     global _literal_probability
     global _semantically_valid
+    global _word_equation
 
     # set global config
     _max_terms           = max_terms
@@ -147,6 +151,41 @@ def make_random_ast(num_vars, num_asserts, depth, max_terms, max_str_lit_length,
     _max_int_lit         = max_int_lit
     _literal_probability = literal_probability
     _semantically_valid  = semantically_valid
+    _word_equation       = word_equation
+
+    if _word_equation:
+        global TERMINALS
+        global NONTERMINALS
+        global ALMOST_TERMINALS
+        global N_ARY_NONTERMINALS
+        global EXPRESSION_SORTS
+        global DECLARABLE_SORTS
+
+        TERMINALS = []
+
+        # nodes that can take expressions
+        NONTERMINALS = [
+            NotNode,
+            LengthNode
+        ]
+
+        # nodes that can take only terminals
+        ALMOST_TERMINALS = []
+
+        # stack the deck, equation_weight times as likely as a length constraint
+        N_ARY_NONTERMINALS = [EqualNode]*equation_weight + [
+            ConcatNode,
+            AndNode,
+            OrNode,
+            GtNode,
+            LtNode,
+            GteNode,
+            LteNode
+        ]
+
+        EXPRESSION_SORTS = [STRING_SORT]
+        DECLARABLE_SORTS = [STRING_SORT]
+
 
     # create variables
     variables = {s: [smt_new_var() for i in range(num_vars)] for s in DECLARABLE_SORTS}

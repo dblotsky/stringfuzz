@@ -25,6 +25,7 @@ __all__ = [
     'IdentifierNode',
     'FunctionDeclarationNode',
     'FunctionDefinitionNode',
+    'ArgDeclarationNode',
     'ConstantDeclarationNode',
     'SortedVarNode',
     'BracketsNode',
@@ -42,7 +43,10 @@ __all__ = [
     'LtNode',
     'GteNode',
     'LteNode',
+    'IfThenElseNode',
     'ConcatNode',
+    'PlusNode',
+    'MulNode',
     'ContainsNode',
     'AtNode',
     'LengthNode',
@@ -309,6 +313,10 @@ class FunctionDeclarationNode(_CommandNode, _TernaryExpression):
     _signature = UNCHECKED_SIGNATURE
     _symbol    = 'declare-fun'
 
+class ArgDeclarationNode(BracketsNode):
+    def __init__(self, body):
+        super().__init__(body)
+
 class FunctionDefinitionNode(_CommandNode, _QuaternaryExpression):
     _signature = UNCHECKED_SIGNATURE
     _symbol    = 'define-fun'
@@ -353,10 +361,25 @@ class LteNode(_RelationExpressionNode):
     _symbol = '<='
 
 # functions
+class IfThenElseNode(_TernaryExpression):
+    _signature = [BOOL_SORT, ANY_SORT, ANY_SORT]
+    _sort      = ANY_SORT #TODO: the ANY_SORTs match
+    _symbol    = 'ite'
+
 class ConcatNode(_BinaryExpression):
     _signature = [STRING_SORT, STRING_SORT]
     _sort      = STRING_SORT
     _symbol    = 'Concat'
+
+class PlusNode(_BinaryExpression):
+    _signature = [INT_SORT, INT_SORT]
+    _sort      = INT_SORT
+    _symbol    = '+'
+
+class MulNode(_BinaryExpression):
+    _signature = [INT_SORT, INT_SORT]
+    _sort      = INT_SORT
+    _symbol    = '*'
 
 class ContainsNode(_BinaryExpression):
     _signature = [STRING_SORT, STRING_SORT]
