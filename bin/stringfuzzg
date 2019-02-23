@@ -111,6 +111,7 @@ DEFAULT_NUM_LIB_VARS     = 2
 DEFAULT_NUM_LIB_CALLS    = 1
 DEFAULT_MAX_EXPR_DEPTH   = 3
 DEFAULT_SORTS            = [INT]
+DEFAULT_SLICED           = False
 
 def main():
 
@@ -653,6 +654,14 @@ def main():
         default = DEFAULT_SORTS,
         help    = 'sorts to choose from. SORTS is of the form [{}]+ representing String ({}), Int ({}), and Bool ({}) (default: {})'.format(''.join(VARIABLE_SORTS), STRING, INT, BOOL, DEFAULT_SORTS)
     )
+    clever_parser.add_argument(
+        '--slice',
+        dest    = 'sliced',
+        action  = 'store_true',
+        default = DEFAULT_SLICED,
+        help    = 'slice the equivalence query (default: {})'.format(DEFAULT_SLICED)
+    )
+
 
     # parse args
     args = global_parser.parse_args()

@@ -56,6 +56,32 @@ _max_str_lit_length  = 0
 _max_int_lit         = 0
 _literal_probability = 0.0
 
+class VarReplacer(ASTWalker):
+    def __init__(self, ast, variables):
+        super().__init__(ast)
+        self.variables = variables
+
+    def walk_expression(self, expression, parent):
+
+        self.enter_expression(expression, parent)
+
+        for i in range(len(expression.body)):
+            sub_expression = expression.body[i]
+
+            if isinstance(sub_expression, ExpressionNode):
+                self.walk_expression(sub_expression, expression)
+
+            if isinstance(sub_expression, IdentifierNode):
+                if sub_expression in self.variables:
+                    expression.body[i] = self.variables[sub_expression]
+                self.walk_identifier(sub_expression, expression)
+
+            if isinstance(sub_expression, LiteralNode):
+                self.walk_literal(sub_expression, expression)
+
+        self.exit_expression(expression, parent)
+
+
 class LibInserter(ASTWalker):
     def __init__(self, ast, sort):
         super().__init__(ast)
@@ -105,6 +131,26 @@ class LibRenamer(ASTWalker):
     def enter_expression(self, expression, parent):
         if expression._symbol.name == self.old_name:
             expression._symbol.name = self.new_name
+
+class Slicer(ASTWalker):
+    def __init__(self, ast, name):
+        super().__init__(ast)
+        self.name      = name
+        self.conds     = []
+        self.new_body  = None
+
+    def walk_expression(self, expression, parent):
+        if isinstance(expression, IfThenElseNode):
+            if self.name in str(expression.body[0]):
+                self.new_body = expression
+            elif self.name in str(expression.body[1]):
+                self.conds.append(expression.body[0])
+                self.walk_expression(expression.body[1], expression)
+            elif self.name in str(expression.body[2]):
+                self.conds.append(NotNode(expression.body[0]))
+                self.walk_expression(expression.body[2], expression)
+        else:
+            self.new_body = expression
 
 def call_func(name, signature, variables):
     if isinstance(variables, dict):
@@ -180,7 +226,7 @@ def make_random_tree(variables, sort, tree_depth, expr_depth):
 
     return expression
 
-def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, num_lib_calls, max_expr_depth, max_str_lit_length, max_int_lit, literal_probability, sorts, client_name="client", old_lib_name="old_lib", new_lib_name="new_lib"):
+def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, num_lib_calls, max_expr_depth, max_str_lit_length, max_int_lit, literal_probability, sorts, sliced, client_name="client", old_lib_name="old_lib", new_lib_name="new_lib"):
 
     # check args
     if max_client_depth < 1:
@@ -227,12 +273,7 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     client_args = [random.choice(_var_sorts) for s in range(num_client_vars)]
 
     # create variables
-    variables = []
-    decls = []
-    for s in client_args:
-        v = smt_new_var()
-        variables.append(v)
-        decls.append(smt_declare_var(v, sort=s))
+    arg_var_map = []
 
     client_vars = {s: [] for s in set(client_args)}
     client_decls = []
@@ -240,8 +281,16 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
         v = smt_new_arg()
         client_vars[s].append(v)
         client_decls.append((v,s))
+        arg_var_map.append(v)
     # create variable declarations
     client_decls = smt_declare_args(client_decls)
+
+    variables = []
+    decls = []
+    for s in client_args:
+        v = smt_new_var()
+        variables.append(v)
+        decls.append(smt_declare_var(v, sort=s))
 
     lib_vars = {s: [] for s in set(lib_args)}
     lib_decls = []
@@ -266,9 +315,6 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     lib_call_depth = inserter.insert_lib_calls(old_lib_name, lib_args, random_args, num_lib_calls)
     new_client_body = LibRenamer([copy.deepcopy(old_client_body)], old_lib_name, new_lib_name).walk()[0]
 
-    decls.append(smt_define_func(client_name+"_old", client_decls, client_sort, old_client_body))
-    decls.append(smt_define_func(client_name+"_new", client_decls, client_sort, new_client_body))
-
     print(";BEGIN STRINGFUZZ STATS")
     print("; max_client_depth", max_client_depth)
     print("; num_client_vars", num_client_vars)
@@ -277,10 +323,27 @@ def make_clever(max_client_depth, num_client_vars, max_lib_depth, num_lib_vars, 
     print("; num_lib_calls", num_lib_calls)
     print("; max_expr_depth", max_expr_depth)
     print("; lowest_lib_call_depth", lib_call_depth)
+    print("; sliced", 1 if sliced else 0)
     print(";END STRINGFUZZ STATS")
 
     # assert that the client calling the old library is not equal to the client calling the new library
     asserts = [AssertNode(NotNode(EqualNode(call_func(client_name+"_old", client_args, variables), call_func(client_name+"_new", client_args, variables))))]
+
+    # get slice asserts and slice
+    if sliced:
+        slicer = Slicer([old_client_body], old_lib_name)
+        slicer.walk()
+        old_client_body = slicer.new_body
+        var_dict = dict(list(zip(arg_var_map, variables)))
+        conds = VarReplacer(slicer.conds, var_dict).walk()
+        conds = [AssertNode(c) for c in conds]
+        asserts.extend(conds)
+        slicer = Slicer([new_client_body], new_lib_name)
+        slicer.walk()
+        new_client_body = slicer.new_body
+
+    decls.append(smt_define_func(client_name+"_old", client_decls, client_sort, old_client_body))
+    decls.append(smt_define_func(client_name+"_new", client_decls, client_sort, new_client_body))
 
     # add check-sat
     expressions = asserts + [CheckSatNode()]
