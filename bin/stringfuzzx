@@ -9,10 +9,12 @@ import argparse
 import random
 
 from stringfuzz.constants import LANGUAGES, SMT_20_STRING, SMT_25_STRING
-from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply
+from stringfuzz.transformers import unprintable, nop, rotate, fuzz, graft, translate, reverse, multiply, bandit
 from stringfuzz.generator import generate
 from stringfuzz.parser import parse, ParsingError
 from stringfuzz.ast import SettingNode, ExpressionNode, MetaCommandNode
+
+from stringfuzz.transformers.bandit import OPERATORS
 
 # constants
 UNPRINTABLE = 'unprintable'
@@ -23,6 +25,7 @@ GRAFT       = 'graft'
 TRANSLATE   = 'translate'
 REVERSE     = 'reverse'
 MULTIPLY    = 'multiply'
+BANDIT      = 'bandit'
 
 TRANSFORMERS = {
     UNPRINTABLE: unprintable,
@@ -32,13 +35,15 @@ TRANSFORMERS = {
     GRAFT:       graft,
     TRANSLATE:   translate,
     REVERSE:     reverse,
-    MULTIPLY:    multiply
+    MULTIPLY:    multiply,
+    BANDIT:      bandit
 }
 
 # defaults
 DEFAULT_SEED           = 0
 DEFAULT_RANDOM         = False
 DEFAULT_FACTOR         = 2
+DEFAULT_DEPTH          = 2
 DEFAULT_INTEGER_FLAG   = False
 DEFAULT_SKIP_RE_RANGE  = True
 DEFAULT_SKIP_STR_TO_RE = True
@@ -177,6 +182,26 @@ def main():
 
     # unprintable transformer
     unprintable_parser = subparsers.add_parser(UNPRINTABLE, help='unprintable transformer')
+
+
+    # bandit transformer
+    bandit_parser = subparsers.add_parser(BANDIT, help='bandit transformer')
+    bandit_parser.add_argument(
+        '--depth',
+        dest    = 'depth',
+        metavar = 'N',
+        type    = int,
+        default = DEFAULT_DEPTH,
+        help    = 'depth for generated ASTs (default: {})'.format(DEFAULT_DEPTH)
+    )
+    bandit_parser.add_argument(
+        '--operator',
+        dest     = 'op',
+        required = True,
+        type     = str,
+        choices  = OPERATORS,
+        help     = 'operator to insert'
+    )
 
     # parse args
     args = global_parser.parse_args()

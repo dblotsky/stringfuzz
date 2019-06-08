@@ -232,6 +232,10 @@ class ExpressionNode(_ASTNode):
             self._symbol = IdentifierNode(self._symbol)
         self.body = body
 
+    @classmethod
+    def get_symbol(cls):
+        return cls._symbol
+
     @property
     def symbol(self):
         return self._symbol

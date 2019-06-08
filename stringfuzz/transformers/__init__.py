@@ -6,3 +6,4 @@ from stringfuzz.transformers.graft import *
 from stringfuzz.transformers.translate import *
 from stringfuzz.transformers.reverse import *
 from stringfuzz.transformers.multiply import *
+from stringfuzz.transformers.bandit import *
