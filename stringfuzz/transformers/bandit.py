@@ -69,15 +69,17 @@ def find_node(op):
     return None
 
 def gen_pair(op_node, old_expr, variables, depth):
-    sig = op_node.get_signature()
-    args = []
+    sig     = op_node.get_signature()
+    old_sig = old_expr.get_signature()
+    args    = []
 
     for j in range(len(sig)):
         s = sig[j]
         found = False
         for i in range(len(old_expr.body)):
-            e = old_expr.body[(i+j) % len(old_expr.body)]
-            if e.get_sort() == s:
+            index = (i+j) % len(old_expr.body)
+            e = old_expr.body[index]
+            if old_sig[index] == s:
                 args.append(e)
                 found = True
                 break
