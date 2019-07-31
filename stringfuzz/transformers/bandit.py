@@ -14,9 +14,8 @@ from stringfuzz.ast import FunctionDeclarationNode, ConstantDeclarationNode
 
 from stringfuzz.generators.random_ast import make_random_expression
 
-OPERATORS = ['=', '>', '<', '>=', '<=', 'Concat', 'Contains', 'At', 'Length', 'IndexOf', 'IndexOf2', 'PrefixOf', 'SuffixOf', 'Replace', 'ReInter', 'ReUnion', 'ReRange', 'RePlus', 'ReStar', 'ReConcat', 'Str2Re', 'InRegex', 'ToInt', 'FromInt', 'Substring']
-
 ALL_SUPPORTED = STR_RET + INT_RET + BOOL_RET + RX_RET
+OPERATORS = [x.get_symbol() for x in ALL_SUPPORTED]
 
 __all__ = [
     'bandit',
