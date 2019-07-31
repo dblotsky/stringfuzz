@@ -3,6 +3,8 @@ The bandit transformer takes in an instance and an operator, and inserts a new
 occurence of the operator into the instance.
 '''
 
+import sys
+
 import random
 
 from stringfuzz.types import STR_RET, INT_RET, BOOL_RET, RX_RET
@@ -109,7 +111,13 @@ def gen_pair(op_node, old_expr, variables, depth):
 
 # public API
 def bandit(ast, op, depth):
-    op = find_node(op)
+
+    tmp = find_node(op)
+    if tmp is None:
+        print("NOT SUPPORTED: " + op, file=sys.stderr)
+        return ast 
+
+    op = tmp
     finder = BanditFinder(ast, op)
     while finder.target == None:
         finder.walk()
