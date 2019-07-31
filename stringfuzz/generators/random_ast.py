@@ -87,7 +87,7 @@ def should_choose_literal():
     return random.random() < _literal_probability
 
 def make_random_terminal(variables, sort):
-
+    
     if sort == REGEX_SORT:
         return ReAllCharNode()
 

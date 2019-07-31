@@ -8,6 +8,8 @@ import random
 from stringfuzz.types import STR_RET, INT_RET, BOOL_RET, RX_RET
 from stringfuzz.ast_walker import ASTWalker
 
+from stringfuzz.ast import FunctionDeclarationNode, ConstantDeclarationNode
+
 from stringfuzz.generators.random_ast import make_random_expression
 
 OPERATORS = ['=', '>', '<', '>=', '<=', 'Concat', 'Contains', 'At', 'Length', 'IndexOf', 'IndexOf2', 'PrefixOf', 'SuffixOf', 'Replace', 'ReInter', 'ReUnion', 'ReRange', 'RePlus', 'ReStar', 'ReConcat', 'Str2Re', 'InRegex', 'ToInt', 'FromInt', 'Substring']
@@ -33,14 +35,31 @@ class BanditFinder(ASTWalker):
         super().__init__(ast)
         self.op     = op
         self.target = None
-        self.variables = []
+        self.variables = {}
         self.exists = False
+        self.defs = {}
 
     def enter_identifier(self, identifier, parent):
-        if identifier not in self.variables:
-            self.variables.append(identifier)
+        sort = self.defs[identifier.name]
+        if sort not in self.variables:
+            self.variables[sort] = []
+        
+        if identifier not in self.variables[sort]:
+            self.variables[sort].append(identifier)
 
     def enter_expression(self, expr, parent):
+        if isinstance(expr, FunctionDeclarationNode):
+            ident = expr.body[0].name
+            sort = expr.body[2].name
+            self.defs[ident] = sort
+            return
+
+        if isinstance(expr, ConstantDeclarationNode):
+            ident = expr.body[0].name
+            sort = expr.body[1].name
+            self.defs[ident] = sort
+            return
+
         replace = random.choice([True, False])
         if self.op.get_symbol() == expr.get_symbol():
             return
