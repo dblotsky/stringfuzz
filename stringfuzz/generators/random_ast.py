@@ -97,11 +97,11 @@ def make_random_terminal(variables, sort):
 
     return random.choice(variables[sort])
 
-def make_random_expression(variables, sort, depth):
+def make_random_expression(variables, sort, depth, valid_override = False):
     global _semantically_valid
 
     # if semantics are going to hell, then randomly reinvent the sort
-    if _semantically_valid is False:
+    if _semantically_valid is False and valid_override is False:
         sort = random.choice(EXPRESSION_SORTS)
 
     # at depth 0, make a terminal
@@ -123,7 +123,7 @@ def make_random_expression(variables, sort, depth):
         signature      = [collapsed_sort for i in range(num_args)]
 
     # generate random arguments
-    random_args = [make_random_expression(variables, arg_sort, shrunken_depth) for arg_sort in signature]
+    random_args = [make_random_expression(variables, arg_sort, shrunken_depth, valid_override) for arg_sort in signature]
 
     # build expression
     expression = expression_node(*random_args)

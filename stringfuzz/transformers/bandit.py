@@ -88,23 +88,24 @@ def find_node(op):
             return node
     return None
 
+
 def gen_pair(op_node, old_expr, variables, depth):
-    sig     = op_node.get_signature()
+    sig = op_node.get_signature()
     old_sig = old_expr.get_signature()
-    args    = []
+    args = []
 
     for j in range(len(sig)):
         s = sig[j]
         found = False
-        for i in range(len(old_expr.body)):
-            index = (i+j) % len(old_expr.body)
-            e = old_expr.body[index]
+        for i in range(len(old_sig)):
+            index = (i+j) % len(old_sig)
             if old_sig[index] == s:
+                e = old_expr.body[index]
                 args.append(e)
                 found = True
                 break
         if not found:
-            args.append(make_random_expression(variables, s, depth))
+            args.append(make_random_expression(variables, s, depth, True))
 
     return [old_expr, op_node(*args)]
 
