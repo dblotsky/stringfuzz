@@ -25,11 +25,16 @@ class BanditTransformer(ASTWalker):
     def __init__(self, ast, pair):
         super().__init__(ast)
         self.pair = pair
+        self.replaced = False
 
     def enter_expression(self, expr, parent):
+        if self.replaced:
+            return
         for i in range(len(expr.body)):
             if expr.body[i] == self.pair[0]:
                 expr.body[i] = self.pair[1]
+                self.replaced = True
+
 
 class BanditFinder(ASTWalker):
     def __init__(self, ast, op):
