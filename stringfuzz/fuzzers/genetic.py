@@ -17,6 +17,7 @@ from stringfuzz.util import coin_toss
 
 __all__ = [
     'simulate'
+    'simulatecmp'
 ]
 
 # constants
@@ -132,8 +133,8 @@ def time_solver(command, problem, timeout, verbose=False, debug=False):
     # if it times out ...
     except subprocess.TimeoutExpired as e:
 
-        # if verbose is True:
-        print('TIMED OUT:', repr(command), '... killing', process.pid, file=sys.stderr)
+        if verbose is True:
+            print('TIMED OUT:', repr(command), '... killing', process.pid, file=sys.stderr)
 
         # kill it
         os.killpg(os.getpgid(process.pid), signal.SIGINT)
@@ -142,9 +143,9 @@ def time_solver(command, problem, timeout, verbose=False, debug=False):
         elapsed = timeout
 
         # print output
-        # if verbose is True:
-        print('STDOUT:', process.stdout.read(), file=sys.stderr, end='')
-        print('STDERR:', process.stderr.read(), file=sys.stderr, end='')
+        if verbose is True:
+            print('STDOUT:', process.stdout.read(), file=sys.stderr, end='')
+            print('STDERR:', process.stderr.read(), file=sys.stderr, end='')
 
     # if it completes in time ...
     else:
@@ -219,6 +220,14 @@ def judge(population, saint_peter):
     for organism in population:
         yield get_score(organism, saint_peter)
 
+def judgecmp(population, saint_peter1, saint_peter2):
+    for organism in population:
+        score1 = get_score(organism, saint_peter1)
+        score2 = get_score(organism, saint_peter2)
+        if (score1 < score2):
+            print(organism)
+        yield score1-score2
+
 def cull(population, scores):
 
     # annotate specimens with their scores
@@ -232,14 +241,14 @@ def cull(population, scores):
         heappush(heap, entry)
 
     # get best specimens
-    print('population', ' '.join(['p[{i}]={s}'.format(s=len(e), i=i) for i, e in enumerate(population)]))
+    # print('population', ' '.join(['p[{i}]={s}'.format(s=len(e), i=i) for i, e in enumerate(population)]))
     best_entries = [heappop(heap) for i in range(3)]
-    print('best entries', best_entries)
+    # print('best entries', best_entries)
     best_indices = [entry[1] for entry in best_entries]
-    print('best indices', best_indices)
+    # print('best indices', best_indices)
     best         = [population[i] for i in best_indices]
-    print('best:', ' '.join(['p[{i}]={s} for {t}'.format(t=e[0], s=len(population[e[1]]), i=e[1]) for e in best_entries]))
-    print('')
+    # print('best:', ' '.join(['p[{i}]={s} for {t}'.format(t=e[0], s=len(population[e[1]]), i=e[1]) for e in best_entries]))
+    # print('')
 
     return best
 
@@ -271,6 +280,37 @@ def simulate(progenitor, language, saint_peter, num_generations, world_size, log
 
         # measure performance of each organism
         scores = judge(population, saint_peter)
+
+        # keep only the "best" organisms
+        population = cull(population, scores)
+
+    # return final population
+    return population
+
+def simulatecmp(progenitor, language, saint_peter1, saint_peter2, num_generations, world_size, log_resolution):
+
+    # set global config
+    global _language
+    _language = language
+
+    # create initial population
+    population = [progenitor]
+
+    # run simulation
+    for g in range(num_generations):
+
+        # log generation progress
+        if time_to_log(g, log_resolution):
+            print('generation {}'.format(g))
+
+        # sanity check: there should be organisms
+        assert len(population) > 0
+
+        # populate world
+        population = reproduce(population, world_size)
+
+        # measure performance of each organism
+        scores = judgecmp(population, saint_peter1, saint_peter2)
 
         # keep only the "best" organisms
         population = cull(population, scores)

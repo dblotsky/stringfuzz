@@ -16,7 +16,8 @@ setup(
         'bin/stringfuzzg',
         'bin/stringstats',
         'bin/stringmerge',
-        'bin/stringbreak'
+        'bin/stringbreak',
+        'bin/stringcmp'
     ],
     packages     = find_packages(),
     package_dir  = {
