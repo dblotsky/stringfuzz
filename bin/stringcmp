@@ -13,6 +13,7 @@ from stringfuzz.fuzzers.genetic import simulatecmp
 
 DEFAULT_NUM_GENERATIONS = 200
 DEFAULT_LOG_RESOLUTION  = 1
+DEFAULT_THRESHOLD       = 2
 DEFAULT_WORLD_SIZE      = 10
 
 def main():
@@ -65,6 +66,15 @@ def main():
         default = DEFAULT_NUM_GENERATIONS,
         help    = 'number of generations (default: {})'.format(DEFAULT_NUM_GENERATIONS)
     )
+    parser.add_argument(
+        '--threshold',
+        '-t',
+        dest    = 'threshold',
+        metavar = 'T',
+        type    = int,
+        default = DEFAULT_THRESHOLD,
+        help    = 'print when solver1 outperforms solver2 by (default: {}s)'.format(DEFAULT_NUM_GENERATIONS)
+    )
 
     # parse args
     args = parser.parse_args()
@@ -84,21 +94,22 @@ def main():
     else:
         seed_problem = parse(args.seed_problem.read(), args.in_language)
 
-    # print seed problem
-    print('progenitor:')
-    print('-----')
-    print(generate(seed_problem, args.out_language))
-    print('-----')
+    # # print seed problem
+    # print('progenitor:')
+    # print('-----')
+    # print(generate(seed_problem, args.out_language))
+    # print('-----')
 
-    # run the tester
-    print('')
-    print('simulating ...')
+    # # run the tester
+    # print('')
+    # print('simulating ...')
     surviving_problems = simulatecmp(
         progenitor      = seed_problem,
         language        = args.out_language,
         saint_peter1    = args.command1,
         saint_peter2    = args.command2,
         num_generations = args.num_generations,
+        threshold       = args.threshold,
         world_size      = DEFAULT_WORLD_SIZE,
         log_resolution  = DEFAULT_LOG_RESOLUTION
     )

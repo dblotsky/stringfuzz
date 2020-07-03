@@ -22,7 +22,7 @@ __all__ = [
 
 # constants
 DEFAULT_MUTATION_ROUNDS = 4
-DEFAULT_TIMEOUT         = 5
+DEFAULT_TIMEOUT         = 10
 MAX_NUM_ASSERTS         = 20
 NUM_RUNS                = 8
 
@@ -168,11 +168,11 @@ def time_solver(command, problem, timeout, verbose=False, debug=False):
 def reproduce(survivors, world_size):
 
     # create offspring
-    num_offspring = world_size - len(survivors)
+    num_offspring = world_size
     offspring     = [mate(survivors) for i in range(num_offspring)]
 
     # return new population
-    new_population = survivors + offspring
+    new_population = offspring
     return new_population
 
 def generate_problem(problem):
@@ -220,20 +220,23 @@ def judge(population, saint_peter):
     for organism in population:
         yield get_score(organism, saint_peter)
 
-def judgecmp(population, saint_peter1, saint_peter2):
+def judgecmp(population, saint_peter1, saint_peter2, threshold):
     for organism in population:
         score1 = get_score(organism, saint_peter1)
         score2 = get_score(organism, saint_peter2)
-        if (score1 < score2):
-            print(organism)
-        yield score1-score2
+        if (score2 - score1 > threshold):
+            print("\n\n;%s is better than %s by %s" %(saint_peter1, saint_peter2, str(score2 - score1)))
+            print(generate_problem(organism))
+            print("\n\n")
+        print(";", score2-score1)
+        yield score2-score1
 
 def cull(population, scores):
 
     # annotate specimens with their scores
     global _timeout
     indices   = range(len(population))
-    annotated = zip([(_timeout - s) for s in scores], indices)
+    annotated = zip([-s for s in scores], indices)
 
     # create a min-heap out of annotated specimens
     heap = []
@@ -287,7 +290,7 @@ def simulate(progenitor, language, saint_peter, num_generations, world_size, log
     # return final population
     return population
 
-def simulatecmp(progenitor, language, saint_peter1, saint_peter2, num_generations, world_size, log_resolution):
+def simulatecmp(progenitor, language, saint_peter1, saint_peter2, num_generations, threshold, world_size, log_resolution):
 
     # set global config
     global _language
@@ -301,7 +304,7 @@ def simulatecmp(progenitor, language, saint_peter1, saint_peter2, num_generation
 
         # log generation progress
         if time_to_log(g, log_resolution):
-            print('generation {}'.format(g))
+            print(';generation {}'.format(g))
 
         # sanity check: there should be organisms
         assert len(population) > 0
@@ -310,7 +313,7 @@ def simulatecmp(progenitor, language, saint_peter1, saint_peter2, num_generation
         population = reproduce(population, world_size)
 
         # measure performance of each organism
-        scores = judgecmp(population, saint_peter1, saint_peter2)
+        scores = judgecmp(population, saint_peter1, saint_peter2, threshold)
 
         # keep only the "best" organisms
         population = cull(population, scores)
